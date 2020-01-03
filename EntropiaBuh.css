@@ -8,6 +8,29 @@ body, html {
 	margin-bottom: 0px;
 }
 
+/* Main_Menu */
+
+#main_menu {
+	display: inline;
+	padding: 0px;
+}
+
+#main_menu li {
+	display: inline;
+	padding: 0px 5px;
+	font-family: cursive;
+	font-weight: normal;
+	cursor: pointer;
+}
+
+#main_menu li:hover {
+	font-weight: bolder;
+}
+
+#main_menu li.Active {
+	border-bottom: solid 1px;	
+}
+
 /* aliButton кнопка */
 
 .aliButton {
@@ -174,6 +197,10 @@ table.aliTable.ScrlTab {
 
 .MargTop15 {
 	margin-top: 15px;
+}
+
+.FRite {
+	float: right;
 }
 
 /* элементы */

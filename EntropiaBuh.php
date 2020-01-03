@@ -30,7 +30,7 @@ class EntrBub {
 				if (!$lvln) continue;
 				if($lvl > $lvln)
 					for($j = 0; $j < $lvl - $lvln; $j++) array_pop($par);
-				$lvl = trim ( $str [1] );
+				$lvl = $lvln;
 				$nom = $this->SQLBase->escape( $str [3] );
 				$val = $this->SQLBase->escape( $str [4] );
 				$opr = trim ( $str [5] );
@@ -40,6 +40,9 @@ class EntrBub {
 					if($opr == 'остатки'){
 						$par[] = $this->SQLBase->addGrup ( 'Nomenkl', $nom, end($par));
 						continue;
+					} else {
+						$par[] = $this->SQLBase->addGrup ( 'accTab', $nom, end($par));
+						continue;
 					}
 				}
 				if($opr == 'остатки'){
@@ -47,7 +50,14 @@ class EntrBub {
 					$nomenkl = $this->SQLBase->addGrup('Nomenkl', $nom, end($par), 'FALSE');
 					$this->SQLBase->addAccDvij('2019-01-01 00:00:00', $accOst, $nomenkl, str_replace(',', '.', $val), 
 							['ref' => $accOst, 'nam' => 'Остатки']);
+				} else {
+					$nomenkl = $this->SQLBase->addGrup('Nomenkl', $nom, '', 'FALSE');
+					$dat = $this->DataConv($str[2]);
+					$docType = $this->LoadDocType($par);
+		//			$this->SQLBase->addAccDvij('2019-01-01 00:00:00', $accOst, $nomenkl, str_replace(',', '.', $val),
+		//					['ref' => $accOst, 'nam' => 'Остатки']);
 				}
+					
 				
 			}
 		} catch ( Exception $e ) {
@@ -59,6 +69,15 @@ class EntrBub {
 			return $this->SQLBase->AccObor(intval($depth))->fetch_all(MYSQLI_ASSOC);
 		} catch ( Exception $e ) {
 			$this->errExit ( $e->getMessage () );
+		}
+	}
+	public function DataConv($dat) {
+		return new DateTime(str_replace('_', '-', $dat));
+	}
+	public function LoadDocType($acc) {
+		$cnt = count($acc);
+		if($cnt >= 2) {
+			
 		}
 	}
 }
@@ -137,13 +156,33 @@ class EntrBase {
                 " );
 		}
 	}
-	public function addGrup($tabl, $name, $par, $grup = 'TRUE') {
+	/**
+	 *@param $tabl
+	 *@param $name
+	 *@param $par
+	 *@param $grup
+	 */
+	public function addGrup($tabl, $name, $par, $grup = '') {
 		$eName = $name;
-		$uuid = $this->stsQuery ("SELECT ref FROM {$this->param['sql_pref']}{$tabl}
-			WHERE grup = TRUE AND 
-				par = '{$par}' AND
-				name = '{$eName}'
-		")->fetch_assoc();
+		if($grup == 'FALSE'){
+			if($par) {
+				$par_ = " AND par = '{$par}' ";
+			} else {
+				$par_ = '';
+			}
+			$uuid = $this->stsQuery ("SELECT ref FROM {$this->param['sql_pref']}{$tabl}
+				WHERE grup = {$grup} {$par_} AND
+					name = '{$eName}'
+			")->fetch_assoc();
+		} else {
+			$uuid = $this->stsQuery (
+				"SELECT ref FROM {$this->param['sql_pref']}{$tabl}
+				WHERE grup = TRUE AND
+					par = '{$par}' AND
+					name = '{$eName}'
+				")->fetch_assoc();
+			$grup = 'TRUE';
+		}
 		if($uuid){
 			return $uuid['ref'];
 		} else {

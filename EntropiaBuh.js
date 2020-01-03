@@ -6,6 +6,15 @@ function LoadPage() {
   
   var aliLib = GetAliLib();
   
+  //меню
+  var mMenu = {kont : document.getElementById("main_menu"),
+       fncChangeTab : function() {return true;}};
+  aliLib.UL_Menu(mMenu);
+  mMenu.addItem("acc", "Оборотка", "Tab_1");
+  mMenu.addItem("Nomenkl", "Номенклатера", "Tab_2");
+  mMenu.addItem("Setting", "Настройки", "Tab_3");
+  mMenu.items[0].elm.click();
+  
   //обработчики
   document.getElementById("btnLoadStart").onclick = function() {
     aliLib.GetSelFileWin(function(files) {
@@ -195,6 +204,38 @@ function GetAliLib() {
     }
     rez.onchange = function(name) {};
     return rez;
+  }
+  
+  lib.UL_Menu = function(param) {
+    var ff = function(i) {
+      return function() {
+        if(param.fncChangeTab(param.items[i].Name)) {
+          for (var j = 0; j < param.items.length; j++) 
+            param.items[j].TabElm.style.display = 
+              i == j ? "block" : "none";
+          if(typeof param.activElm !== 'undefined')
+            param.items[param.activElm].elm.classList.remove('Active');
+          param.items[i].elm.classList.add('Active');
+          //window.onresize();
+        }
+        param.activElm = i;
+      }
+    }
+    param.addItem = function(name, fullName, TabID) {
+      var item = {
+        get Name(){return name},
+        get FullName(){return fullName} 
+      };
+      item.elm = document.createElement("li");
+      item.elm.innerHTML = item.FullName;
+      item.elm.onclick = ff(param.items.length);
+      item.TabElm = document.getElementById(TabID);
+      param.kont.appendChild(item.elm);
+      param.items.push(item);
+    }
+    
+    param.items = [];
+    return param;
   }
   
   return lib;
