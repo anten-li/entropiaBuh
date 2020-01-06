@@ -18,7 +18,9 @@
     	</nav>
     	<table id="mainTable" class="MargTop15 aliTable noScrlTab"></table>
     </div>
-    <div id="Tab_2"></div>
+    <div id="Tab_2">
+      <table id="NomenklTable" class="MargTop15 aliTable noScrlTab"></table>
+    </div>
     <div id="Tab_3">
     	<span id="btnLoadStart" class="aliButton">Загрузить остатки</span>
     </div>

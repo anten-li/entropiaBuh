@@ -6,9 +6,62 @@ function LoadPage() {
   
   var aliLib = GetAliLib();
   
+  var elmForm = {};
+  elmForm.tablAcc = {};
+  elmForm.tabNomenkl = {};
+  
+  //функции
+  var LoadNomenkl = function() {
+    var param = {};
+    param.cmd = "NomenklSp";
+    aliLib.ServerCall(param, function(rez) {
+      var tablParam = elmForm.tabNomenkl;
+      tablParam["table"]    = document.getElementById("NomenklTable");
+      tablParam["arr"]      = rez;
+      tablParam["arColum"]  = {"name" : "наименование", "gTab" : "тип"};
+      tablParam["merBtm"]   = 15;
+      aliLib.drowTab(tablParam);
+      tablParam.resize();
+    });
+  };
+  var fnSpChange = function() {
+    var param = {};
+    param.cmd = "otch";
+    if (spTabType.elemKn.innerHTML == "номенклатура") {param.tabType = "Nomenkl"}
+    else if (spTabType.elemKn.innerHTML == "номенклатура") {
+      
+    } else {
+      document.getElementById("mainTable").innerHTML = "";
+      return;
+    }
+    param.depth = spTabDepth.elemKn.innerHTML;
+    aliLib.ServerCall(param, function(rez) {
+      var tablParam = elmForm.tablAcc;
+      tablParam["table"]    = document.getElementById("mainTable");
+      tablParam["arr"]      = rez;
+      tablParam["arColum"]  = {"name" : "наименование", "value": "сумма"};
+      tablParam["ClassCol"] = "lvl";
+      tablParam["merBtm"]   = 15;
+      aliLib.drowTab(tablParam);
+      tablParam.resize();
+    });
+  };
+
+  
   //меню
   var mMenu = {kont : document.getElementById("main_menu"),
-       fncChangeTab : function() {return true;}};
+       fncChangeTab : function(name) {
+         if(name == 'Nomenkl') {
+           if(elmForm.tabNomenkl.table == undefined) {
+             LoadNomenkl();
+           } else {
+             elmForm.tabNomenkl.resize();
+           }
+         }
+         if(name == 'acc' && elmForm.tablAcc.resize != undefined) elmForm.tablAcc.resize();
+         return true;
+       }
+  };
   aliLib.UL_Menu(mMenu);
   mMenu.addItem("acc", "Оборотка", "Tab_1");
   mMenu.addItem("Nomenkl", "Номенклатера", "Tab_2");
@@ -35,30 +88,7 @@ function LoadPage() {
       };      
     });
   };
-  
-  var fnSpChange = function() {
-    var param = {};
-    param.cmd = "otch";
-    if (spTabType.elemKn.innerHTML == "номенклатура") {param.tabType = "Nomenkl"}
-    else if (spTabType.elemKn.innerHTML == "номенклатура") {
-      
-    } else {
-      document.getElementById("mainTable").innerHTML = "";
-      return;
-    }
-    param.depth = spTabDepth.elemKn.innerHTML;
-    aliLib.ServerCall(param, function(rez) {
-      var tablParam = {};
-      tablParam["table"]    = document.getElementById("mainTable");
-      tablParam["arr"]      = rez;
-      tablParam["arColum"]  = {"name" : "наименование", "value": "сумма"};
-      tablParam["ClassCol"] = "lvl";
-      tablParam["merBtm"]   = 15;
-      aliLib.drowTab(tablParam);
-      tablParam.resize();
-    });
-  };
-  
+    
   var spTabType = aliLib.Dropdown(document.getElementById("btnTabType"));
   spTabType.onchange = fnSpChange;  
   var spTabDepth = aliLib.Dropdown(document.getElementById("btnTabDepth"));
@@ -209,16 +239,15 @@ function GetAliLib() {
   lib.UL_Menu = function(param) {
     var ff = function(i) {
       return function() {
-        if(param.fncChangeTab(param.items[i].Name)) {
-          for (var j = 0; j < param.items.length; j++) 
-            param.items[j].TabElm.style.display = 
-              i == j ? "block" : "none";
-          if(typeof param.activElm !== 'undefined')
-            param.items[param.activElm].elm.classList.remove('Active');
-          param.items[i].elm.classList.add('Active');
-          //window.onresize();
-        }
+        for (var j = 0; j < param.items.length; j++) 
+          param.items[j].TabElm.style.display = 
+            i == j ? "block" : "none";
+        if(typeof param.activElm !== 'undefined')
+          param.items[param.activElm].elm.classList.remove('Active');
+        param.items[i].elm.classList.add('Active');
+        
         param.activElm = i;
+        param.fncChangeTab(param.items[i].Name);
       }
     }
     param.addItem = function(name, fullName, TabID) {

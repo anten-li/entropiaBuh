@@ -13,6 +13,8 @@ if ($inParam != "") {
           $entrBuh->errExit($inParam["rez"][2][3], TRUE);
         } elseif ($inParam["cmd"] == "otch") {
         	$entrBuh->errExit($entrBuh->Otch($inParam["depth"]), TRUE);
+        } elseif ($inParam["cmd"] == "NomenklSp") {
+        	$entrBuh->errExit($entrBuh->getNomenkl(), TRUE);
         }
     } catch (Exception $e) {}
 }

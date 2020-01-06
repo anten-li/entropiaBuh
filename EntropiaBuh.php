@@ -34,8 +34,14 @@ class EntrBub {
 				$nom = $this->SQLBase->escape( $str [3] );
 				$val = $this->SQLBase->escape( $str [4] );
 				$opr = trim ( $str [5] );
-				if ($mm[$i+1][1] == $lvl + 1 or 
-					 (!$mm[$i+1][1] and $mm[$i+2][1] == $lvl + 1)) {
+				if ($mm[$i+1][1] > $lvl or
+					 (!$mm[$i+1][1] and $mm[$i+2][1] > $lvl)) {
+					//
+					$lvl_ = $mm[$i+1][1];
+					if(!$lvl_)	$lvl_ = $mm[$i+2][1];
+					
+					for($j = 0; $j < $lvl_ - $lvl - 1; $j++) $par[] = '';
+					 
 					// Группа		
 					if($opr == 'остатки'){
 						$par[] = $this->SQLBase->addGrup ( 'Nomenkl', $nom, end($par));
@@ -44,7 +50,9 @@ class EntrBub {
 						$par[] = $this->SQLBase->addGrup ( 'accTab', $nom, end($par));
 						continue;
 					}
+				
 				}
+				
 				if($opr == 'остатки'){
 					// Остатки
 					$nomenkl = $this->SQLBase->addGrup('Nomenkl', $nom, end($par), 'FALSE');
@@ -52,8 +60,8 @@ class EntrBub {
 							['ref' => $accOst, 'nam' => 'Остатки']);
 				} else {
 					$nomenkl = $this->SQLBase->addGrup('Nomenkl', $nom, '', 'FALSE');
-					$dat = $this->DataConv($str[2]);
-					$docType = $this->LoadDocType($par);
+					//$dat = $this->DataConv($str[2]);
+					//$docType = $this->LoadDocType($par);
 		//			$this->SQLBase->addAccDvij('2019-01-01 00:00:00', $accOst, $nomenkl, str_replace(',', '.', $val),
 		//					['ref' => $accOst, 'nam' => 'Остатки']);
 				}
@@ -63,6 +71,23 @@ class EntrBub {
 		} catch ( Exception $e ) {
 			$this->errExit ( $e->getMessage () );
 		}
+	}
+	public function getNomenkl(){
+		$otb = [[
+			'field' => 'grup',
+			'comp' => '=',
+			'val' => 'FALSE'
+		]];
+		
+		$rez = $this->SQLBase->GetTabl('Nomenkl', $otb, ['name'])->fetch_all(MYSQLI_ASSOC);
+		for($i = 0; $i < count($rez); $i++) $rez[$i]['gTab'] = $this->getNomenklType($rez[$i]['gTab']);
+		return $rez;
+	}
+	public function getNomenklType($TypeInt){
+		if(!$TypeInt) {
+			return "<не указано>";
+		} else 
+			return "<неизвестный тип>";
 	}
 	public function Otch($depth){
 		try {
@@ -142,6 +167,7 @@ class EntrBase {
                   ref CHAR(36) NOT NULL PRIMARY KEY,
 									par CHAR(36),
 									grup TINYINT,
+									gTab TINYINT,
                   name VARCHAR(255)
 								);
                 CREATE TABLE {$pref}accTab (
@@ -194,6 +220,24 @@ class EntrBase {
         name = '{$eName}';" );
 			return $uuid;
 		}
+	}
+	public function GetTabl($tName, $tWhere = [], $tOdr = []){
+		$WhereC = '';
+		$odrC = '';
+		for($i = 0; $i < count($tWhere); $i++){
+			if($WhereC) $WhereC.= ' and ';
+			$WhereC.= "{$tWhere[$i]['field']} ";
+			$WhereC.= "{$tWhere[$i]['comp']} ";;
+			$WhereC.= $tWhere[$i]['val'];
+		}
+		for($i = 0; $i < count($tOdr); $i++){
+			if($odrC) $odrC.= ', ';
+			$odrC.= $tOdr[$i];
+		}
+		if($WhereC) $WhereC = "WHERE {$WhereC}";
+		if($odrC) $odrC = "ORDER BY {$odrC}";
+		
+		return $this->stsQuery ("SELECT * FROM {$this->param['sql_pref']}{$tName} {$WhereC} {$odrC}");
 	}
 	public function addAccDvij($date, $acc, $Nomenkl, $value, $doc){
 		$uuid = $this->CreateUUID ();
