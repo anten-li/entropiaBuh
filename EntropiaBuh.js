@@ -16,10 +16,37 @@ function LoadPage() {
     param.cmd = "NomenklSp";
     aliLib.ServerCall(param, function(rez) {
       var tablParam = elmForm.tabNomenkl;
-      tablParam["table"]    = document.getElementById("NomenklTable");
-      tablParam["arr"]      = rez;
-      tablParam["arColum"]  = {"name" : "наименование", "gTab" : "тип"};
-      tablParam["merBtm"]   = 15;
+      tablParam["table"]       = document.getElementById("NomenklTable");
+      tablParam["arr"]         = rez;
+      tablParam["arColum"]     = {"name" : "наименование", "gTab" : "тип"};
+      tablParam["merBtm"]      = 15;
+      tablParam["ffInsertRow"] = function(row) {
+        if(!row.cells[1].textContent) row.cells[1].innerHTML = "<не указано>";
+        row.ondblclick = function(ev) {
+          var winNom = aliLib.CreateWin(row.cells[0].textContent, "", function() {
+            
+          });
+          winNom.elMSG.appendChild(document.createElement("span")).innerHTML = "тип: ";
+          winNom.elMSG.style.marginTop = "10px";
+          winNom.elMSG.style.textAlign = "left";
+          winNom.elBtnType = winNom.elMSG.appendChild(document.createElement("span"));
+          winNom.elBtnType.classList.add("aliDropdown");
+          winNom.elBtnType.style.minWidth = "100px";
+          winNom.spType    = aliLib.Dropdown(winNom.elBtnType);
+          winNom.spType.elemSp.style.minWidth = "94px";
+          winNom.spType.addElem("финансы");
+          winNom.spType.addElem("Одежда");
+          winNom.spType.addElem("броня");
+          winNom.spType.addElem("Оружие");
+          winNom.spType.addElem("Инструмент");
+          winNom.spType.addElem("Материал");
+          winNom.spType.addElem("ресурс");
+          winNom.spType.addElem("Чертеж");
+          winNom.spType.addElem("прочие");
+          winNom.spType.addElem("Майндфорс");
+          winNom.spType.elemKn.innerHTML = ev.currentTarget.cells[1].textContent;
+        }
+      };
       aliLib.drowTab(tablParam);
       tablParam.resize();
     });
@@ -63,9 +90,9 @@ function LoadPage() {
        }
   };
   aliLib.UL_Menu(mMenu);
-  mMenu.addItem("acc", "Оборотка", "Tab_1");
+  mMenu.addItem("acc",     "Оборотка",     "Tab_1");
   mMenu.addItem("Nomenkl", "Номенклатера", "Tab_2");
-  mMenu.addItem("Setting", "Настройки", "Tab_3");
+  mMenu.addItem("Setting", "Настройки",    "Tab_3");
   mMenu.items[0].elm.click();
   
   //обработчики
@@ -107,41 +134,48 @@ function LoadPage() {
 function GetAliLib() {
   var lib = {};
   
-  lib.GetModalWin = function(text) {
+  lib.GetModalWin = function(text = "") {
     var win = {};
     
     win.show = function() {
-      win.DivEl = document.body.appendChild(document.createElement("div"));
-      win.DivEl.classList.add("aliModal");
-      win.DivElMain = win.DivEl.appendChild(document.createElement("div"));
-      win.DivElMain.innerHTML = text;
+      win.elDivOsn = document.body.appendChild(document.createElement("div"));
+      win.elDivOsn.classList.add("aliModal");
+      win.elDivMain = win.elDivOsn.appendChild(document.createElement("div"));
+      win.elDivMain.innerHTML = text;
     };
     
     return win;
   };
   
-  lib.CreateWin = function(zag, msg, id, ff) {
-    var win = lib.GetModalWin("<h3>" + zag + "</h3><div>" + msg
-        + "</div><div class='MargTop15'><span id='" + id
-        + "_btnOk' class='aliButton'>ОК</span></div>");
-    
+  lib.CreateWin = function(zag, msg, ff) {
+    var win = lib.GetModalWin();
     win.show();
-    document.getElementById(id + "_btnOk").onclick = function() {
+    win.elHead = win.elDivMain.appendChild(document.createElement("h"));
+    win.elHead.innerHTML = zag;
+    win.elMSG  = win.elDivMain.appendChild(document.createElement("div"));
+    win.elMSG.innerHTML  = msg;
+    win.elPodv = win.elDivMain.appendChild(document.createElement("div"));
+    win.elPodv.classList.add("MargTop15");
+    win.elBtnOK = win.elPodv.appendChild(document.createElement("span"));
+    win.elBtnOK.classList.add("aliButton");
+    win.elBtnOK.innerHTML  = "ОК";
+    win.elBtnOK.onclick = function() {
       if(ff) ff();
-      document.body.removeChild(win.DivEl);
-    }
-  }
+      document.body.removeChild(win.elDivOsn);
+    };
+    return win;
+  };
   
   lib.GetSelFileWin = function(ff) {
     var IDbtn = "SelFileOk";
     
-    lib.CreateWin("Файл остатков", "<input id='" + IDbtn + "_file' type='file'>", IDbtn, function() {
+    lib.CreateWin("Файл остатков", "<input id='" + IDbtn + "_file' type='file'>", function() {
       ff(document.getElementById(IDbtn + "_file").files);
     });
   }
   
   lib.GetERRWin = function(msg, zag = "Ошибка", ff) {
-    lib.CreateWin(zag, msg, "ERRWinOk", ff);
+    lib.CreateWin(zag, msg, ff);
   }
   
   lib.ServerCall = function(param, ff) {
@@ -151,7 +185,7 @@ function GetAliLib() {
       "method" : "POST",
       "body" : JSON.stringify(param)
     }).then(function(resp) {
-      document.body.removeChild(win.DivEl);
+      document.body.removeChild(win.elDivOsn);
       if(resp.ok){
         resp.json().then(function(rez) {
           if(rez.noErr){
@@ -187,6 +221,7 @@ function GetAliLib() {
         cc.innerHTML = param.arr[i][key];
         if(param.ClassCol) cc.classList.add(param.arr[i][param.ClassCol]);
       }
+      if(param.ffInsertRow){param.ffInsertRow(row)};
     }
     param.resize = function() {
       var bodyHei = document.body.clientHeight;
@@ -216,6 +251,7 @@ function GetAliLib() {
 
   lib.Dropdown = function(kont) {
     var rez = {};
+    rez.parnt = kont;
     rez.elemKn = kont.appendChild(document.createElement("div"));
     rez.elemSp = kont.appendChild(document.createElement("ul"));
     rez.cheng = function(ev) {

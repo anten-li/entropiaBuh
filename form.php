@@ -3,7 +3,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>База энтропия</title>
-    <script type="text/javascript" src="EntropiaBuh.js?9"></script>
+    <script type="text/javascript" src="EntropiaBuh.js?11"></script>
     <link rel="stylesheet" href="EntropiaBuh.css?12">
   </head>
   <body onload="LoadPage()">

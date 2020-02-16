@@ -84,6 +84,8 @@ class EntrBub {
 		return $rez;
 	}
 	public function getNomenklType($TypeInt){
+		return $TypeInt;
+		
 		if(!$TypeInt) {
 			return "<не указано>";
 		} else 
