@@ -15,6 +15,10 @@ if ($inParam != "") {
         	$entrBuh->errExit($entrBuh->Otch($inParam["depth"]), TRUE);
         } elseif ($inParam["cmd"] == "NomenklSp") {
         	$entrBuh->errExit($entrBuh->getNomenkl(), TRUE);
+        } elseif ($inParam["cmd"] == "NomenklUpdate") {
+        	$entrBuh->errExit($entrBuh->UpdateNomenkl($inParam["ref"], $inParam["dat"]), TRUE);
+        } else {
+        	$entrBuh->errExit([], TRUE);
         }
     } catch (Exception $e) {}
 }

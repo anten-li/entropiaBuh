@@ -10,6 +10,9 @@ function LoadPage() {
   elmForm.tablAcc = {};
   elmForm.tabNomenkl = {};
   
+  var spNomType = ["финансы", "Одежда", "броня", "Оружие", "Инструмент", "Материал",
+      "ресурс", "Чертеж", "прочие", "Майндфорс"];
+  
   //функции
   var LoadNomenkl = function() {
     var param = {};
@@ -18,13 +21,26 @@ function LoadPage() {
       var tablParam = elmForm.tabNomenkl;
       tablParam["table"]       = document.getElementById("NomenklTable");
       tablParam["arr"]         = rez;
-      tablParam["arColum"]     = {"name" : "наименование", "gTab" : "тип"};
+      tablParam["arColum"]     = {"name" : {"name" : "наименование", "hiden" : false}, 
+                                  "gTab" : {"name" : "тип",          "hiden" : false},
+                                  "ref"  : {"name" : "ссылка",       "hiden" : true}};
+      
       tablParam["merBtm"]      = 15;
       tablParam["ffInsertRow"] = function(row) {
-        if(!row.cells[1].textContent) row.cells[1].innerHTML = "<не указано>";
+        if(!row.cells[1].textContent) {
+          row.cells[1].innerHTML = "<не указано>";
+        } else {
+          row.cells[1].innerHTML = spNomType[parseInt(row.cells[1].textContent, 10) - 1];
+        };
         row.ondblclick = function(ev) {
           var winNom = aliLib.CreateWin(row.cells[0].textContent, "", function() {
-            
+            var param = {};
+            param.cmd = "NomenklUpdate";
+            param.ref = row.cells[2].textContent;
+            param.dat = {"gTab" : winNom.spType.index() + 1};
+            aliLib.ServerCall(param, function(rez) {
+              row.cells[1].innerHTML = spNomType[winNom.spType.index()];
+            });
           });
           winNom.elMSG.appendChild(document.createElement("span")).innerHTML = "тип: ";
           winNom.elMSG.style.marginTop = "10px";
@@ -34,17 +50,15 @@ function LoadPage() {
           winNom.elBtnType.style.minWidth = "100px";
           winNom.spType    = aliLib.Dropdown(winNom.elBtnType);
           winNom.spType.elemSp.style.minWidth = "94px";
-          winNom.spType.addElem("финансы");
-          winNom.spType.addElem("Одежда");
-          winNom.spType.addElem("броня");
-          winNom.spType.addElem("Оружие");
-          winNom.spType.addElem("Инструмент");
-          winNom.spType.addElem("Материал");
-          winNom.spType.addElem("ресурс");
-          winNom.spType.addElem("Чертеж");
-          winNom.spType.addElem("прочие");
-          winNom.spType.addElem("Майндфорс");
-          winNom.spType.elemKn.innerHTML = ev.currentTarget.cells[1].textContent;
+          for(var k = 0; k < spNomType.length; k++)
+            winNom.spType.addElem(spNomType[k]);
+          winNom.spType.elemKn.innerHTML = row.cells[1].textContent;
+          winNom.elBtnCen = winNom.elPodv.appendChild(document.createElement("span"));
+          winNom.elBtnCen.classList.add("aliButton");
+          winNom.elBtnCen.innerHTML  = "Отмена";
+          winNom.elBtnCen.onclick = function() {
+            document.body.removeChild(winNom.elDivOsn);
+          }
         }
       };
       aliLib.drowTab(tablParam);
@@ -212,7 +226,8 @@ function GetAliLib() {
 
     for (key in param.arColum) {
       cc = row.insertCell(-1);
-      cc.innerHTML = param.arColum[key];
+      cc.innerHTML = param.arColum[key].name;
+      if(param.arColum[key].hiden) cc.style.display = "none";
     }
     for (var i = 0; i < param.arr.length; i++) {
       row = body.insertRow(-1);
@@ -220,6 +235,7 @@ function GetAliLib() {
         cc = row.insertCell(-1);
         cc.innerHTML = param.arr[i][key];
         if(param.ClassCol) cc.classList.add(param.arr[i][param.ClassCol]);
+        if(param.arColum[key].hiden) cc.style.display = "none";
       }
       if(param.ffInsertRow){param.ffInsertRow(row)};
     }
@@ -264,6 +280,11 @@ function GetAliLib() {
       nElem.innerHTML = name;
       nElem.onclick = rez.cheng;
       return nElem;
+    }
+    rez.index = function() {
+      for(k = 0; k < rez.elemSp.children.length; k++)
+        if (rez.elemSp.children[k].innerHTML == rez.elemKn.innerHTML) return k;
+      return -1;
     }
     rez.elemKn.onmousemove = function() {
       if(rez.elemSp.style.display != "") rez.elemSp.style.display = "";

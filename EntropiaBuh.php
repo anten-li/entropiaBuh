@@ -83,6 +83,12 @@ class EntrBub {
 		for($i = 0; $i < count($rez); $i++) $rez[$i]['gTab'] = $this->getNomenklType($rez[$i]['gTab']);
 		return $rez;
 	}
+	public function UpdateNomenkl($ref, $param){
+		foreach ($param as $key => $pStr)
+			if(is_string($pStr)) $param[$key] = $this->SQLBase->escape($pStr);
+		$this->SQLBase->UpdateNomenkl($this->SQLBase->escape($ref), $param);
+		return [];
+	}
 	public function getNomenklType($TypeInt){
 		return $TypeInt;
 		
@@ -375,6 +381,23 @@ SELECT * FROM vt_AccObor_1;");
 	public function DeletVT($name) {
 		return $this->stsQuery(
 			"DROP TABLE IF EXISTS {$name};");
+	}
+	public function UpdateNomenkl($ref, $param){
+		$tt = "";
+		foreach ($param as $key => $pStr){
+			if($tt) $tt .= ", ";
+			$tt .= $key." = ";
+			if(is_string($pStr)) {
+				$tt .= "'".$pStr."'";
+			} elseif (is_int($pStr)) {
+				$tt .= $pStr;
+			}
+		}
+		
+		return $this->stsQuery(
+			"UPDATE {$this->param['sql_pref']}Nomenkl
+			SET {$tt}
+			where ref ='{$ref}'");
 	}
 	public function CreateUUID() {
 		return sprintf ( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x', 
