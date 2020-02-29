@@ -133,6 +133,8 @@ table.aliTable {
 
 .aliTable td {
 	padding: 2px 4px;
+	cursor: default;
+	user-select: none;
 }
 .aliTable.noScrlTab  td {
 	border: 1px solid;
@@ -142,7 +144,6 @@ table.aliTable {
 	border-top: solid 1px;
 	border-left: solid 1px;
 }
-
 
 /* */
 
@@ -202,6 +203,10 @@ table.aliTable.ScrlTab {
 
 .FRite {
 	float: right;
+}
+
+.TabCurStr tbody tr:hover {
+	background-color: #CCFFCC
 }
 
 /* элементы */

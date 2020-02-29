@@ -7,8 +7,8 @@ function LoadPage() {
   var aliLib = GetAliLib();
   
   var elmForm = {};
-  elmForm.tablAcc = {};
-  elmForm.tabNomenkl = {};
+  elmForm.tablAcc    = aliLib.CreateTab("tbNomenkl", document.getElementById("mainTable"));
+  elmForm.tabNomenkl = aliLib.CreateTab("tbNomenkl", document.getElementById("NomenklTable"));
   
   var spNomType = ["финансы", "Одежда", "броня", "Оружие", "Инструмент", "Материал",
       "ресурс", "Чертеж", "прочие", "Майндфорс"];
@@ -19,7 +19,6 @@ function LoadPage() {
     param.cmd = "NomenklSp";
     aliLib.ServerCall(param, function(rez) {
       var tablParam = elmForm.tabNomenkl;
-      tablParam["table"]       = document.getElementById("NomenklTable");
       tablParam["arr"]         = rez;
       tablParam["arColum"]     = {"name" : {"name" : "наименование", "hiden" : false}, 
                                   "gTab" : {"name" : "тип",          "hiden" : false},
@@ -48,7 +47,7 @@ function LoadPage() {
           winNom.elBtnType = winNom.elMSG.appendChild(document.createElement("span"));
           winNom.elBtnType.classList.add("aliDropdown");
           winNom.elBtnType.style.minWidth = "100px";
-          winNom.spType    = aliLib.Dropdown(winNom.elBtnType);
+          winNom.spType    = aliLib.Dropdown("ddNomType", winNom.elBtnType);
           winNom.spType.elemSp.style.minWidth = "94px";
           for(var k = 0; k < spNomType.length; k++)
             winNom.spType.addElem(spNomType[k]);
@@ -61,7 +60,7 @@ function LoadPage() {
           }
         }
       };
-      aliLib.drowTab(tablParam);
+      tablParam.drow();
       tablParam.resize();
     });
   };
@@ -78,32 +77,29 @@ function LoadPage() {
     param.depth = spTabDepth.elemKn.innerHTML;
     aliLib.ServerCall(param, function(rez) {
       var tablParam = elmForm.tablAcc;
-      tablParam["table"]    = document.getElementById("mainTable");
       tablParam["arr"]      = rez;
       tablParam["arColum"]  = {"name" : "наименование", "value": "сумма"};
       tablParam["ClassCol"] = "lvl";
       tablParam["merBtm"]   = 15;
-      aliLib.drowTab(tablParam);
+      tablParam.drow();
       tablParam.resize();
     });
   };
 
   
   //меню
-  var mMenu = {kont : document.getElementById("main_menu"),
-       fncChangeTab : function(name) {
-         if(name == 'Nomenkl') {
-           if(elmForm.tabNomenkl.table == undefined) {
-             LoadNomenkl();
-           } else {
-             elmForm.tabNomenkl.resize();
-           }
-         }
-         if(name == 'acc' && elmForm.tablAcc.resize != undefined) elmForm.tablAcc.resize();
-         return true;
-       }
-  };
-  aliLib.UL_Menu(mMenu);
+  var mMenu = aliLib.UL_Menu("MineMenu", document.getElementById("main_menu"));
+  mMenu.fncChangeTab = function(name) {
+    if(name == 'Nomenkl') {
+      if(elmForm.tabNomenkl.parnt.innerHTML == "") {
+        LoadNomenkl();
+      } else {
+        elmForm.tabNomenkl.resize();
+      }
+    }
+    if(name == 'acc' && elmForm.tablAcc.resize != undefined) elmForm.tablAcc.resize();
+    return true;
+  }
   mMenu.addItem("acc",     "Оборотка",     "Tab_1");
   mMenu.addItem("Nomenkl", "Номенклатера", "Tab_2");
   mMenu.addItem("Setting", "Настройки",    "Tab_3");
@@ -111,7 +107,7 @@ function LoadPage() {
   
   //обработчики
   document.getElementById("btnLoadStart").onclick = function() {
-    aliLib.GetSelFileWin(function(files) {
+    var win = aliLib.GetSelFileWin(function(files) {
       var rez, param = {}, reader = new FileReader();
       
       if(files.length > 0) {
@@ -122,17 +118,24 @@ function LoadPage() {
           
           param.cmd = "StartLoad";
           param.rez = rez;
+          param.fgNomenkl = win.fgNomenkl.checked;
           aliLib.ServerCall(param, function(rez) {
             aliLib.GetERRWin(rez, "ответ сервера");
           });
         };
       };      
     });
+    win.elMSG.appendChild(document.createElement("br"));
+    win.fgNomenkl = win.elMSG.appendChild(document.createElement("input"));
+    win.fgNomenkl.classList.add("MargTop15");
+    win.fgNomenkl.type = "checkbox";
+    var elm = win.elMSG.appendChild(document.createElement("span"));
+    elm.innerHTML = "только номенклатура";
   };
     
-  var spTabType = aliLib.Dropdown(document.getElementById("btnTabType"));
+  var spTabType = aliLib.Dropdown("ddTabType", document.getElementById("btnTabType"));
   spTabType.onchange = fnSpChange;  
-  var spTabDepth = aliLib.Dropdown(document.getElementById("btnTabDepth"));
+  var spTabDepth = aliLib.Dropdown("ddDepth", document.getElementById("btnTabDepth"));
   spTabDepth.onchange = fnSpChange;
   
   spTabDepth.addElem("1");
@@ -147,6 +150,11 @@ function LoadPage() {
 
 function GetAliLib() {
   var lib = {};
+    
+  lib.createElement = function(Name, elm = undefined){
+    var rez = {"Name" : Name, "parnt" : elm};
+    return rez;
+  }
   
   lib.GetModalWin = function(text = "") {
     var win = {};
@@ -164,7 +172,7 @@ function GetAliLib() {
   lib.CreateWin = function(zag, msg, ff) {
     var win = lib.GetModalWin();
     win.show();
-    win.elHead = win.elDivMain.appendChild(document.createElement("h"));
+    win.elHead = win.elDivMain.appendChild(document.createElement("h4"));
     win.elHead.innerHTML = zag;
     win.elMSG  = win.elDivMain.appendChild(document.createElement("div"));
     win.elMSG.innerHTML  = msg;
@@ -183,7 +191,7 @@ function GetAliLib() {
   lib.GetSelFileWin = function(ff) {
     var IDbtn = "SelFileOk";
     
-    lib.CreateWin("Файл остатков", "<input id='" + IDbtn + "_file' type='file'>", function() {
+    return lib.CreateWin("Файл остатков", "<input id='" + IDbtn + "_file' type='file'>", function() {
       ff(document.getElementById(IDbtn + "_file").files);
     });
   }
@@ -213,61 +221,65 @@ function GetAliLib() {
       }
     });
   }
-  lib.drowTab = function(param) {
+  lib.CreateTab = function(Name, kont) {
     var key, cc;
-    if (param.arr.lenght == 0)
-      return param;
+    var param = lib.createElement(Name, kont);
     
-    param.table.innerHTML = "";
-    
-    var header = param.table.createTHead();
-    var body = param.table.createTBody();
-    var row = header.insertRow(-1);
+    param.drow = function(){
+      if (param.arr.lenght == 0)
+        return param;
 
-    for (key in param.arColum) {
-      cc = row.insertCell(-1);
-      cc.innerHTML = param.arColum[key].name;
-      if(param.arColum[key].hiden) cc.style.display = "none";
-    }
-    for (var i = 0; i < param.arr.length; i++) {
-      row = body.insertRow(-1);
+      param.parnt.innerHTML = "";
+
+      var header = param.parnt.createTHead();
+      var body = param.parnt.createTBody();
+      var row = header.insertRow(-1);
+
       for (key in param.arColum) {
         cc = row.insertCell(-1);
-        cc.innerHTML = param.arr[i][key];
-        if(param.ClassCol) cc.classList.add(param.arr[i][param.ClassCol]);
+        cc.innerHTML = param.arColum[key].name;
         if(param.arColum[key].hiden) cc.style.display = "none";
       }
-      if(param.ffInsertRow){param.ffInsertRow(row)};
-    }
+      for (var i = 0; i < param.arr.length; i++) {
+        row = body.insertRow(-1);
+        for (key in param.arColum) {
+          cc = row.insertCell(-1);
+          cc.innerHTML = param.arr[i][key];
+          if(param.ClassCol) cc.classList.add(param.arr[i][param.ClassCol]);
+          if(param.arColum[key].hiden) cc.style.display = "none";
+        }
+        if(param.ffInsertRow){param.ffInsertRow(row)};
+      }
+    };
     param.resize = function() {
+      if(param.parnt.innerHTML == "") return;
       var bodyHei = document.body.clientHeight;
-      param.table.style.height = (bodyHei - param.table.getBoundingClientRect().top 
+      param.parnt.style.height = (bodyHei - param.parnt.getBoundingClientRect().top 
           - param.merBtm) + "px";
       
-      var rsElm = param.table.tBodies[0];
+      var rsElm = param.parnt.tBodies[0];
       rsElm.style.height = (bodyHei - rsElm.getBoundingClientRect().top
           - param.merBtm + 1) + "px";
       
-      param.table.classList.remove("noScrlTab");
-      param.table.classList.add("ScrlTab");
+      param.parnt.classList.remove("noScrlTab");
+      param.parnt.classList.add("ScrlTab");
       if (rsElm.clientHeight == rsElm.scrollHeight) {
-        param.table.classList.remove("ScrlTab");
-        param.table.classList.add("noScrlTab");
-        param.table.style.height = "";
+        param.parnt.classList.remove("ScrlTab");
+        param.parnt.classList.add("noScrlTab");
+        param.parnt.style.height = "";
       }
       for (var j = 0; j < 2; j++) {
         for (var i = 0; i < Object.keys(param.arColum).length; i++) {
-          param.table.tHead.rows[0].cells[i].style.width = getComputedStyle(
-              param.table.tBodies[0].rows[0].cells[i]).width;
+          param.parnt.tHead.rows[0].cells[i].style.width = getComputedStyle(
+              param.parnt.tBodies[0].rows[0].cells[i]).width;
         }
       }
     }
     return param;
   };
 
-  lib.Dropdown = function(kont) {
-    var rez = {};
-    rez.parnt = kont;
+  lib.Dropdown = function(Name, kont) {
+    var rez = lib.createElement(Name, kont);
     rez.elemKn = kont.appendChild(document.createElement("div"));
     rez.elemSp = kont.appendChild(document.createElement("ul"));
     rez.cheng = function(ev) {
@@ -293,7 +305,8 @@ function GetAliLib() {
     return rez;
   }
   
-  lib.UL_Menu = function(param) {
+  lib.UL_Menu = function(Name, kont) {
+    var param = lib.createElement(Name, kont);
     var ff = function(i) {
       return function() {
         for (var j = 0; j < param.items.length; j++) 
@@ -316,7 +329,7 @@ function GetAliLib() {
       item.elm.innerHTML = item.FullName;
       item.elm.onclick = ff(param.items.length);
       item.TabElm = document.getElementById(TabID);
-      param.kont.appendChild(item.elm);
+      param.parnt.appendChild(item.elm);
       param.items.push(item);
     }
     

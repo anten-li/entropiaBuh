@@ -9,7 +9,7 @@ if ($inParam != "") {
     try {
         $inParam = json_decode($inParam, TRUE);
         if ($inParam["cmd"] == "StartLoad") {
-          $entrBuh->StartLoad($inParam["rez"]);
+        	$entrBuh->StartLoad($inParam["rez"], $inParam["fgNomenkl"]);
           $entrBuh->errExit($inParam["rez"][2][3], TRUE);
         } elseif ($inParam["cmd"] == "otch") {
         	$entrBuh->errExit($entrBuh->Otch($inParam["depth"]), TRUE);

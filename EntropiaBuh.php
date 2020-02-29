@@ -18,7 +18,7 @@ class EntrBub {
 		] ) );
 		exit ();
 	}
-	public function StartLoad($mm) {
+	public function StartLoad($mm, $NomOnly) {
 		try {
 			$size = count ( $mm ) - 1;
 			$par = [];
@@ -56,8 +56,9 @@ class EntrBub {
 				if($opr == 'остатки'){
 					// Остатки
 					$nomenkl = $this->SQLBase->addGrup('Nomenkl', $nom, end($par), 'FALSE');
-					$this->SQLBase->addAccDvij('2019-01-01 00:00:00', $accOst, $nomenkl, str_replace(',', '.', $val), 
-							['ref' => $accOst, 'nam' => 'Остатки']);
+					if(!$NomOnly)
+						$this->SQLBase->addAccDvij('2019-01-01 00:00:00', $accOst, $nomenkl, str_replace(',', '.', 
+							$val), ['ref' => $accOst, 'nam' => 'Остатки']);
 				} else {
 					$nomenkl = $this->SQLBase->addGrup('Nomenkl', $nom, '', 'FALSE');
 					//$dat = $this->DataConv($str[2]);
