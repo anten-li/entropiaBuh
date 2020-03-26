@@ -6,6 +6,8 @@ function LoadPage() {
   
   var aliLib = GetAliLib();
   
+  var winLog = undefined;
+  
   var elmForm = {};
   elmForm.tablAcc    = aliLib.CreateTab("tbNomenkl", document.getElementById("mainTable"));
   elmForm.tabNomenkl = aliLib.CreateTab("tbNomenkl", document.getElementById("NomenklTable"));
@@ -14,6 +16,45 @@ function LoadPage() {
       "ресурс", "Чертеж", "прочие", "Майндфорс"];
   
   //функции
+  aliLib.errFF = function(rez) {
+	if(rez.rez == 'ошибка авторизации') {
+	  fLogin();
+	  return false;
+	};  
+	return true;
+  };
+  
+  var init = function() {
+	mMenu.items[0].elm.click();
+	spTabDepth.elemKn.innerHTML = "1";
+	spTabType.elemKn.innerHTML = "номенклатура";
+	spTabType.elemSp.children[spTabType.index()].click();
+	//rez.elemKn.innerHTML
+  }
+  
+  var fLogin = function() {
+	if (winLog != undefined) return; 
+    winLog = aliLib.CreateWin("Авторизация", "", function() {
+      var param = {};
+      param.cmd = "Login";
+      param.Log = eLog.value;
+      param.PWD = ePwd.value;
+      aliLib.ServerCall(param, function(rez) {
+    	winLog = undefined;
+    	if(rez.logined) {
+    	  init();
+    	} else {
+    	  fLogin();
+    	} 
+      });
+    });
+    winLog.elMSG.appendChild(document.createElement("span")).innerHTML = "Login: ";
+    var eLog = winLog.elMSG.appendChild(document.createElement("input"));
+    winLog.elMSG.appendChild(document.createElement("br"));
+    winLog.elMSG.appendChild(document.createElement("span")).innerHTML = "password: ";
+    var ePwd = winLog.elMSG.appendChild(document.createElement("input"));
+  }
+  
   var LoadNomenkl = function() {
     var param = {};
     param.cmd = "NomenklSp";
@@ -96,14 +137,26 @@ function LoadPage() {
       } else {
         elmForm.tabNomenkl.resize();
       }
-    }
-    if(name == 'acc' && elmForm.tablAcc.resize != undefined) elmForm.tablAcc.resize();
+    } else if(name == 'acc' && elmForm.tablAcc.resize != undefined) {
+      elmForm.tablAcc.resize();
+	} else if(name == 'logOff') {
+	  var param = {};
+	  param.cmd = "logOff";
+	  aliLib.ServerCall(param, function(rez) {
+		var param2 = {};
+		param2.cmd = "GetUser";
+		aliLib.ServerCall(param2, function(rez) {
+		  init();  
+		});
+	  });
+	}; 
     return true;
   }
   mMenu.addItem("acc",     "Оборотка",     "Tab_1");
   mMenu.addItem("Nomenkl", "Номенклатера", "Tab_2");
   mMenu.addItem("Setting", "Настройки",    "Tab_3");
-  mMenu.items[0].elm.click();
+  mMenu.addItem("logOff",  "Выход",        "Tab_4");
+ // mMenu.items[0].elm.click();
   
   //обработчики
   document.getElementById("btnLoadStart").onclick = function() {
@@ -141,11 +194,17 @@ function LoadPage() {
   spTabDepth.addElem("1");
   spTabDepth.addElem("2");
   spTabDepth.addElem("3");
-  spTabDepth.elemKn.innerHTML = "1";
+ // spTabDepth.elemKn.innerHTML = "1";
   
   spTabType.addElem("документ");
-  spTabType.addElem("номенклатура").click();
+  spTabType.addElem("номенклатура"); //.click();
   
+  //авторизация	
+  var param = {};
+  param.cmd = "GetUser";
+  aliLib.ServerCall(param, function(rez) {
+	init();  
+  });
 }
 
 function GetAliLib() {
@@ -213,7 +272,8 @@ function GetAliLib() {
           if(rez.noErr){
             ff(rez.rez);
           } else {
-            lib.GetERRWin(rez.rez);
+        	if((lib.errFF)&&(lib.errFF(rez)))  
+              lib.GetERRWin(rez.rez);
           }
         });
       } else {

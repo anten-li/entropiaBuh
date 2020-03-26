@@ -3,7 +3,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>База энтропия</title>
-    <script type="text/javascript" src="EntropiaBuh.js?14"></script>
+    <script type="text/javascript" src="EntropiaBuh.js?17"></script>
     <link rel="stylesheet" href="EntropiaBuh.css?15">
   </head>
   <body onload="LoadPage()">
@@ -23,6 +23,8 @@
     </div>
     <div id="Tab_3">
     	<span id="btnLoadStart" class="aliButton">Загрузить остатки</span>
+    </div>
+    <div id="Tab_4">
     </div>
   </body>
 </html>

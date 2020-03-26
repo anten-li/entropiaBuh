@@ -73,6 +73,39 @@ class EntrBub {
 			$this->errExit ( $e->getMessage () );
 		}
 	}
+	public function logOff(){
+		setcookie("id", "", time() - 1, '/');
+		setcookie("hash", "", time() - 1, '/');
+		$this->SQLBase->User = NULL;
+	}
+	public function Logined(){
+		if(isset($_COOKIE['id']) && isset($_COOKIE['hash'])) {
+			$User = $this->SQLBase->GetTabl('User', [['field' => 'Login', 'comp' => '=', 'val' =>
+					"'{$this->SQLBase->escape($_COOKIE['id'])}'"]])->fetch_all(MYSQLI_ASSOC);
+			if((count($User) == 1) and ($_COOKIE['hash'] == $User[0]['Hash'])){
+				return true;
+			} else {
+				setcookie("id", "", time() - 1, '/');
+				setcookie("hash", "", time() - 1, '/');
+			}
+		}
+	  return false;  
+	}
+	public function enter($Log, $Pwd){
+		setcookie("id", "", time() - 1, '/');
+		setcookie("hash", "", time() - 1, '/');
+		$User = $this->SQLBase->GetTabl('User', [['field' => 'Login', 'comp' => '=', 'val' => 
+				"'{$this->SQLBase->escape($Log)}'"]])->fetch_all(MYSQLI_ASSOC);
+		if((count($User) == 1) and ($User[0]['PWD'] == md5($Pwd.$User[0]['salt']))){
+			$hash = md5($this->SQLBase->CreateUUID());
+			$this->SQLBase->User = $User[0]['ref'];
+			$this->SQLBase->setUserHash($hash);
+			setcookie("id", $User[0]['Login'], time() + 60*30, '/');
+			setcookie("hash", $hash, time() + 60*30, '/');
+			return TRUE;
+		}
+		return false;
+	}
 	public function getNomenkl(){
 		$otb = [[
 			'field' => 'grup',
@@ -118,6 +151,7 @@ class EntrBub {
 class EntrBase {
 	private $param;
 	private $cnn;
+	public $User;
 	public function __construct() {
 		require 'setup.php';
 
@@ -149,6 +183,25 @@ class EntrBase {
 			$rez = substr($rez, 1, strlen($rez) - 2);
 		}
 		return $this->cnn->real_escape_string($rez);
+	}
+	public function setUserHash($Hash){
+		$this->stsQuery (
+			"UPDATE {$this->param['sql_pref']}User
+			SET Hash = '{$Hash}'
+			where ref ='{$this->User}'");
+	}
+	public function createUser($name, $Login, $PWD, $Role){
+		$salt = (string)rand(100, 999);
+		$Paswd = md5($PWD.$salt);
+		$uuid = $this->CreateUUID ();
+		$this->stsQuery ( "INSERT INTO {$this->param['sql_pref']}User SET
+      	ref = '{$uuid}',
+				Role = {$Role},
+				Login = '{$Login}',
+				PWD = '{$Paswd}',
+				salt = '{$salt}',
+        name = '{$name}';" );
+		return $uuid;
 	}
 	public function createBase() {
 		$DBname = $this->param ['sql_DBname'];
@@ -185,10 +238,22 @@ class EntrBase {
 									grup TINYINT,
                   name VARCHAR(255)
                 );
+                CREATE TABLE {$pref}User (
+                  ref CHAR(36) NOT NULL PRIMARY KEY,
+									Role TINYINT,
+									Login VARCHAR(50),
+									PWD VARCHAR(32),
+									Hash VARCHAR(32),
+									salt VARCHAR(3),
+                  name VARCHAR(255)
+                );
                 INSERT INTO {$pref}config SET 
                   vers = 1;
                 COMMIT;
+								SET AUTOCOMMIT=1;
                 " );
+			while ($this->cnn->more_results()) $this->cnn->next_result();
+			$this->createUser('Admin', 'Admin', md5(''), 0);
 		}
 	}
 	/**
