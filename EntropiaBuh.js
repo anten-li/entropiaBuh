@@ -58,12 +58,13 @@ function LoadPage() {
   var LoadNomenkl = function() {
     var param = {};
     param.cmd = "NomenklSp";
+    param.Filter = spItemType.index() - 1;
     aliLib.ServerCall(param, function(rez) {
       var tablParam = elmForm.tabNomenkl;
       tablParam["arr"]         = rez;
-      tablParam["arColum"]     = {"name" : {"name" : "наименование", "hiden" : false}, 
-                                  "gTab" : {"name" : "тип",          "hiden" : false},
-                                  "ref"  : {"name" : "ссылка",       "hiden" : true}};
+      tablParam["arColum"]     = {"Name" : {"name" : "наименование", "hiden" : false}, 
+                                  "Type" : {"name" : "тип",          "hiden" : false},
+                                  "Ref"  : {"name" : "ссылка",       "hiden" : true}};
       
       tablParam["merBtm"]      = 15;
       tablParam["ffInsertRow"] = function(row) {
@@ -76,10 +77,14 @@ function LoadPage() {
           var winNom = aliLib.CreateWin(row.cells[0].textContent, "", function() {
             var param = {};
             param.cmd = "NomenklUpdate";
-            param.ref = row.cells[2].textContent;
-            param.dat = {"gTab" : winNom.spType.index() + 1};
+            //param.ref = row.cells[2].textContent;
+            param.dat = {"Type" : winNom.spType.index() + 1, "Ref" : row.cells[2].textContent};
             aliLib.ServerCall(param, function(rez) {
-              row.cells[1].innerHTML = spNomType[winNom.spType.index()];
+              if((spItemType.index() != 0) && (spItemType.index() - 1 != winNom.spType.index())) {
+            	LoadNomenkl();  
+              }	else {
+                row.cells[1].innerHTML = spNomType[winNom.spType.index()];
+              }
             });
           });
           winNom.elMSG.appendChild(document.createElement("span")).innerHTML = "тип: ";
@@ -119,7 +124,8 @@ function LoadPage() {
     aliLib.ServerCall(param, function(rez) {
       var tablParam = elmForm.tablAcc;
       tablParam["arr"]      = rez;
-      tablParam["arColum"]  = {"name" : "наименование", "value": "сумма"};
+      tablParam["arColum"]  = {"Name" : {"name" : "наименование", "hiden" : false}, 
+    		  				   "Value": {"name" : "сумма", 		  "hiden" : false}};
       tablParam["ClassCol"] = "lvl";
       tablParam["merBtm"]   = 15;
       tablParam.drow();
@@ -198,6 +204,16 @@ function LoadPage() {
   
   spTabType.addElem("документ");
   spTabType.addElem("номенклатура"); //.click();
+  
+  var spItemType = aliLib.Dropdown("ddItemType", document.getElementById("btnItemType"));
+  spItemType.addElem("все");
+  spItemType.addElem("<не указано>");
+  for(var k = 0; k < spNomType.length; k++)
+    spItemType.addElem(spNomType[k]);
+  spItemType.elemSp.style.minWidth = "100px";
+  spItemType.elemKn.style.minWidth = "100px";
+  spItemType.elemKn.innerHTML = "все";
+  spItemType.onchange = LoadNomenkl;
   
   //авторизация	
   var param = {};

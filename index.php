@@ -1,41 +1,48 @@
 <?php
+$inParam = file_get_contents('php://input');
 
-require_once "EntropiaBuh.php";
-
-$entrBuh = new EntrBub();
-
-$inParam = file_get_contents ( 'php://input' );
 if ($inParam != "") {
-    try {
-        $inParam = json_decode($inParam, TRUE);
-        if($inParam["cmd"] == "Login") {
-            if($entrBuh->enter($inParam["Log"], md5($inParam["PWD"]))) {
-                $entrBuh->errExit(['logined' => TRUE], TRUE);
-            } else {
-                $entrBuh->errExit(['logined' => false], TRUE);
-            };
-        } elseif ($entrBuh->Logined()) {
-            if ($inParam["cmd"] == "StartLoad") {
-              $entrBuh->StartLoad($inParam["rez"], $inParam["fgNomenkl"]);
-              $entrBuh->errExit($inParam["rez"][2][3], TRUE);
-            } elseif ($inParam["cmd"] == "otch") {
-              $entrBuh->errExit($entrBuh->Otch($inParam["depth"]), TRUE);
-            } elseif ($inParam["cmd"] == "NomenklSp") {
-              $entrBuh->errExit($entrBuh->getNomenkl(), TRUE);
-            } elseif ($inParam["cmd"] == "NomenklUpdate") {
-              $entrBuh->errExit($entrBuh->UpdateNomenkl($inParam["ref"], $inParam["dat"]), TRUE);
-           } elseif ($inParam["cmd"] == "logOff") {
-            	$entrBuh->logOff();
-            	$entrBuh->errExit(['logined' => false], TRUE);
-            } else {
-              $entrBuh->errExit([], TRUE);
-            };
-        } else {
-          $entrBuh->errExit("ошибка авторизации", false);
-        };
-    } catch (Exception $e) {
-    	$entrBuh->errExit($e->getMessage(), false);
+  require_once "EntropiaBuh.php";
+  
+  try {
+    $Entropia = new Entropia\Base();
+    
+    $inParam = json_decode($inParam, TRUE);
+    if ($inParam ["cmd"] == "Login") {
+      if ($Entropia->User()->Login($inParam ["Log"], md5($inParam ["PWD"]))) {
+        $Entropia->errExit([ 
+            'logined' => TRUE
+        ], TRUE);
+      } else {
+        $Entropia->errExit([ 
+            'logined' => false
+        ], TRUE);
+      }
+    } elseif ($Entropia->User()->Authorise()) {
+      if ($inParam ["cmd"] == "StartLoad") {
+        $Entropia->Assets()->Load($inParam ["rez"], $inParam ["fgNomenkl"]);
+        $Entropia->ErrExit($inParam ["rez"] [2] [3], true);
+      } elseif ($inParam ["cmd"] == "otch") {
+        $Entropia->errExit($Entropia->Assets()->Report($inParam ["depth"]), TRUE);
+      } elseif ($inParam ["cmd"] == "NomenklSp") {
+        $Entropia->ErrExit($Entropia->Items()->List($inParam ["Filter"]), TRUE); 
+      } elseif ($inParam ["cmd"] == "NomenklUpdate") {
+        $Entropia->ErrExit($Entropia->Items()->Update($Entropia->EscapeKeys($inParam ["dat"])), TRUE);
+      } elseif ($inParam ["cmd"] == "logOff") {
+        $Entropia->User()->LogOff();
+        $Entropia->errExit([ 
+            'logined' => false
+        ], TRUE);
+      } else {
+        $Entropia->errExit([ ], TRUE);
+      }
+    } else {
+      $Entropia->errExit("ошибка авторизации", false);
     }
+    ;
+  } catch (Exception $e) {
+    $Entropia->ErrExit($e->getMessage(), false);
+  }
+} else {
+  require "form.php";
 }
-require "form.php";
-?>
