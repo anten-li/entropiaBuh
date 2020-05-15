@@ -44,5 +44,6 @@ if ($inParam != "") {
     $Entropia->ErrExit($e->getMessage(), false);
   }
 } else {
-  require "form.php";
+  ?><!DOCTYPE html><html lang=ru><head><meta charset="utf-8"/><title>База энтропия</title><?php
+  ?><link rel=stylesheet href='app.css'/><script src=app.js></script><body><?php
 }

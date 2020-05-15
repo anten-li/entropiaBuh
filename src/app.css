@@ -1,0 +1,282 @@
+body {
+    font-size: 16px;
+    font-family: sans-serif;
+    margin: 0px;
+    height: 100vh;
+    background-color: red;
+}
+
+input:focus {
+    outline: none;
+}
+
+.MainForm {
+    box-sizing: border-box;
+    padding: 0.4em;
+    height: calc(100% - 1.4em);
+    color: white;
+    background-color: darkslategrey;
+    overflow: hidden;
+}
+
+.FormFooter {
+    height: 1.4em;
+    background-color: darkslategrey;
+    overflow: hidden;
+}
+
+    .FormFooter ul {
+        box-sizing: border-box;
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+        list-style-type: none;
+    }
+
+    .FormFooter li {
+        padding: 0.1px;
+        box-sizing: border-box;
+        height: 100%;
+        display: inline-block;
+        border: 0.1em solid midnightblue;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .FormFooter .active {
+        background-color: darkolivegreen
+    }
+
+.FormTitle h1 {
+    box-sizing: border-box;
+    padding: 0.4em;
+    font-size: 1em;
+    height: 2em;
+    margin: 0;
+    border-bottom: 0.1em solid midnightblue;
+    user-select: none;
+    overflow: hidden;
+    color: paleturquoise;
+}
+
+.FormTitle div {
+    box-sizing: border-box;
+    padding: 0.4em;
+    float: right;
+    padding: 0.4em;
+    height: 2em;
+    border-left: 0.1em solid midnightblue;
+    border-bottom: 0.1em solid midnightblue;
+    color: darkred;
+    user-select: none;
+    cursor: pointer;
+}
+
+.SubForm {
+    height: 100%;
+    overflow: auto;
+    border: 0.1em solid midnightblue;
+    vertical-align: top;
+    box-sizing: border-box;
+    /*background-color: lawngreen;*/
+}
+
+/* LineMenu */
+.LineMenu {
+    padding: 0.4em;
+}
+
+    .LineMenu ul {
+        margin: 0px;
+        padding: 0.4em;
+        list-style-type: none;
+        background-color: midnightblue;
+    }
+
+    .LineMenu li {
+        display: inline-block;
+        margin-left: 0.4em;
+        height: 1.2em;
+        padding: 0.2em;
+        vertical-align: top;
+        cursor: pointer;
+        user-select: none;
+        color: lightgreen;
+        background-color: darkgreen;
+    }
+
+/* SideMenu */
+.SideMenu {
+    float: left;
+    padding: 0.4em;
+    box-sizing: border-box;
+    height: 100%;
+}
+
+    .SideMenu ul {
+        margin: 0px;
+        padding: 0.4em;
+        box-sizing: border-box;
+        height: 100%;
+        list-style-type: none;
+        background-color: midnightblue;
+    }
+
+    .SideMenu li {
+        margin-top: 0.4em;
+        padding: 0.2em;
+        cursor: pointer;
+        user-select: none;
+        color: lightgreen;
+        background-color: darkgreen;
+    }
+
+/* LAO_Dropdown */
+
+.LAO-Dropdown-element {
+    font-size: inherit;
+    box-sizing: border-box;
+    text-align: center;
+    user-select: none;
+    background-color: midnightblue;
+    color: aquamarine;
+    border: 0.1em solid Purple;
+}
+
+.LAO_Dropdown {
+    display: inline-block;
+    position: relative;
+    /*background-color: midnightblue;*/
+    color: aquamarine;
+}
+
+    .LAO_Dropdown li {
+        list-style-type: none;
+    }
+
+        .LAO_Dropdown li:hover {
+            color: LawnGreen
+        }
+
+
+    .LAO_Dropdown ul {
+        /*box-sizing: border-box;*/
+        margin: 0px;
+        padding: 0.2em;
+        position: absolute;
+        display: none;
+        cursor: pointer;
+        user-select: none;
+        background-color: midnightblue;
+        border: 0.1em solid Purple;
+    }
+
+    /*.LAO_Dropdown ul:active {
+            display: none;
+        }*/
+
+    .LAO_Dropdown:hover ul {
+        display: block;
+    }
+
+nav > .LAO_Dropdown {
+    margin: 0 0.4em
+}
+
+.ElementForm {
+    padding: 1em;
+}
+
+    .ElementForm > div {
+        margin-top: 0.4em;
+    }
+
+    .ElementForm label {
+        display: inline-block;
+        width: 8em;
+        margin-bottom: 0.2em;
+        color: paleturquoise;
+        user-select: none;
+    }
+
+    .ElementForm > div > input[Type=text] {
+        font-size: inherit;
+        background-color: midnightblue;
+        border-width: 0px;
+        color: aquamarine;
+        width: 16em;
+    }
+
+.SubmitFooter {
+    margin-top: 0.4em;
+    max-width: 16em;
+    text-align: center;
+}
+
+    .SubmitFooter > input[Type=submit], .Button {
+        font-size: inherit;
+        padding: 0.3em;
+        border-color: darkgreen;
+        cursor: pointer;
+        color: lightgreen;
+        background-color: darkgreen;
+        user-select: none;
+        margin: 0 0.8em;
+    }
+
+.Button {
+    margin: 0.8em;
+    display: inline-block;
+    border-width: 0.125em;
+    border-style: outset;
+}
+
+.LoginForm {
+    padding-top: 20vh;
+    box-sizing: border-box;
+    height: 100%;
+    background-color: darkslategrey;
+}
+
+    .LoginForm form {
+        background-color: midnightblue;
+        width: 8em;
+        padding: 1em;
+        margin: 0 auto;
+    }
+
+
+    .LoginForm label,
+    .LoginForm input[Type=text],
+    .LoginForm input[Type=Password] {
+        display: block;
+        width: 100%;
+        font-size: inherit;
+        padding: 0.1em;
+    }
+
+    .LoginForm label {
+        margin-top: 0.4em;
+        color: paleturquoise;
+        user-select: none;
+    }
+
+        .LoginForm label:first-child {
+            margin-top: 0em;
+        }
+
+    .LoginForm input[Type=text],
+    .LoginForm input[Type=Password] {
+        background-color: #333366;
+        color: aquamarine;
+        border-width: 0px;
+    }
+
+/*.LoginForm input[Type=submit] {
+        width: 50%;
+        margin: 1em auto 0;
+        border-color: darkgreen;
+        cursor: pointer;
+        color: lightgreen;
+        background-color: darkgreen;
+    }*/

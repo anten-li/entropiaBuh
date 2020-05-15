@@ -1,0 +1,12 @@
+/.vs/
+/.git/
+/obj/
+/Properties/
+/bin/
+/.settings/
+/src/setup.php
+/*.sql
+/.buildpath
+/.project
+/src/app.js.map
+/src/app.js
