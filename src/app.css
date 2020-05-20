@@ -74,7 +74,7 @@ input:focus {
 
 .SubForm {
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
     border: 0.1em solid midnightblue;
     vertical-align: top;
     box-sizing: border-box;
@@ -180,8 +180,68 @@ input:focus {
     }
 
 nav > .LAO_Dropdown {
-    margin: 0 0.4em
+    margin: 0 0.4em;
 }
+
+.TableValue {
+    margin: 0.4em;
+    border-collapse: collapse;
+    border: 0.1em solid darkseagreen;
+}
+
+    .TableValue tbody {
+        display: block;
+        overflow: auto;
+        box-sizing: border-box;
+    }
+
+    .TableValue thead, .TableValue tr.lvl_total {
+        background-color: darkblue;
+        color: aquamarine;
+        box-sizing: border-box;
+    }
+
+    .TableValue tr:first-child td {
+        border-top: none;
+    }
+
+    .TableValue thead td {
+        border-bottom: 0.1em solid darkseagreen;
+    }
+
+    .TableValue.TabScr td:last-child {
+        border-right: 0.1em solid darkseagreen;
+    }
+
+    .TableValue thead {
+        display: block;
+    }
+
+    .TableValue td {
+        /*border: 0.1em solid darkseagreen;*/
+        border-top: 0.1em solid darkseagreen;
+        border-left: 0.1em solid darkseagreen;
+        padding: 0.2em;
+    }
+
+        .TableValue td:first-child {
+            border-left: none;
+        }
+
+    .TableValue tr.lvl_1 {
+        background-color: #332D00;
+        color: #FFF000
+    }
+
+    .TableValue tr.lvl_2 {
+        background-color: #334600;
+        color: #33DC00
+    }
+
+    .TableValue tr.lvl_3 {
+        background-color: #330066;
+        color: #00CCFF
+    }
 
 .ElementForm {
     padding: 1em;

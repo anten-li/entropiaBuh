@@ -673,7 +673,7 @@ class Items extends Table {
    * @param boolean|int $Type
    * @return mixed
    */
-  public function List($Type = -1){
+  public function List($Type = - 1){
     $Filter = [ 
         Base::Filter('IsGroup', '=', FALSE)
     ];
@@ -690,6 +690,9 @@ class Items extends Table {
  * пользователь
  */
 class User extends Table {
+  // public $hash;
+  // public $currentUser;
+  
   /**
    * конструктор
    *
@@ -726,22 +729,18 @@ class User extends Table {
    * @return boolean
    */
   public function Login(string $Login, string $Password){
-    setcookie("id", "", time() - 1, '/');
-    setcookie("hash", "", time() - 1, '/');
-    
     $User = $this->Select([ 
         Base::Filter('Login', '=', $Login)
     ])->fetch_all(MYSQLI_ASSOC);
     
     if ((count($User) == 1) and ($User [0] ['PWD'] == md5($Password . $User [0] ['Salt']))) {
       // успешная аутентификация
-      $hash = md5(Base::CreateUUID());
+      $this->Base->CurrentUser = $User [0];
+      $this->Base->CurrentUser ['hash'] = md5(Base::CreateUUID());
       $this->Update([ 
           'Ref' => $User [0] ['Ref'],
-          'Hash' => $hash
+          'Hash' => $this->Base->CurrentUser ['hash']
       ]);
-      setcookie("id", $User [0] ['Login'], time() + 60 * 30, '/');
-      setcookie("hash", $hash, time() + 60 * 30, '/');
       return TRUE;
     }
     return false;
@@ -761,23 +760,30 @@ class User extends Table {
    *
    * @return boolean
    */
-  public function Authorise(){
-    if (isset($_COOKIE ['id']) && isset($_COOKIE ['hash'])) {
-      $User = $this->Select([ 
-          [ 
-              'field' => 'Login',
-              'comp' => '=',
-              'val' => $_COOKIE ['id']
-          ]
-      ])->fetch_all(MYSQLI_ASSOC);
-      if ((count($User) == 1) and ($_COOKIE ['hash'] == $User [0] ['Hash'])) {
-        $this->Base->CurrentUser = $User;
-        return true;
-      } else {
-        setcookie("id", "", time() - 1, '/');
-        setcookie("hash", "", time() - 1, '/');
-      }
+  public function Authorise($Bearer){
+    $token = [ ];
+    if (! preg_match('/Bearer (\w+)/', $Bearer, $token) or ! $token [1])
+      return false;
+    $token = $token [1];
+    
+    $User = $this->Select(
+            [ 
+                [ 
+                    'field' => 'Ref',
+                    'comp' => '=',
+                    'val' => substr($token, 0, 8) . '-' . substr($token, 8, 4) . '-' .
+                    substr($token, 12, 4) . '-' . substr($token, 16, 4) . '-' .
+                    substr($token, 20, 12)
+                ]
+            ])->fetch_all(MYSQLI_ASSOC);
+    if ((count($User) == 1) and (substr($token, 32) == $User [0] ['Hash'])) {
+      $this->Base->CurrentUser = $User [0];
+      return true;
+    } else {
+      setcookie("id", "", time() - 1, '/');
+      setcookie("hash", "", time() - 1, '/');
     }
+    // }
     return false;
   }
 }

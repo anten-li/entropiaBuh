@@ -20,6 +20,7 @@ namespace LAO_Lib {
         constructor(Name: T, Parent?: HTMLElement) {
             this.Element = document.createElement(Name)
             if (Parent) this.Parent = Parent
+            //this.Element.onresize = this.onResize
         }
         public Hide(): void {
             this.Element.style.display = 'none'
@@ -36,6 +37,7 @@ namespace LAO_Lib {
         public Delete() {
             if (this.Element.parentElement) this.Element.parentElement.removeChild(this.Element)
         }
+        //public onResize(ev?: UIEvent) { }
     }
     export class LAO_Form extends LAO_Element<'div'> {
         private Title_: HTMLElementTagNameMap['h1'] | undefined
@@ -152,6 +154,77 @@ namespace LAO_Lib {
             return null
         }
     }
+    export type TableColumn = {
+        Name: string
+        Hidden: boolean
+        ClassCol?: boolean
+    }
+    export class Table extends LAO_Element<'table'> {
+        constructor(Parent?: HTMLElement, public Column?: Record<string, TableColumn>) {
+            super('table', Parent)
+            this.Element.createTHead()
+            this.Element.createTBody()
+            if (Column) this.SetColumn(Column)
+            window.addEventListener('resize', this.Resize)
+        }
+        public SetColumn(Col: Record<string, TableColumn>) {
+            const tHead = this.Element.tHead
+            if (tHead) {
+                this.Column = Col
+                tHead.innerHTML = ''
+                const tRow = tHead.insertRow()
+                for (const key in Col) {
+                    if (Col[key].ClassCol) continue
+                    const cc = tRow.insertCell()
+                    cc.innerHTML = Col[key].Name
+                    if (Col[key].Hidden) cc.style.display = 'none'
+                }
+            }
+        }
+        public SetData(Data: Record<string, string>[]) {
+            if (this.Element.tBodies.length === 1) {
+                const tBody = this.Element.tBodies[0]
+                tBody.innerHTML = ''
+                for (let i = 0; i < Data.length; i++) {
+                    const tRow = tBody.insertRow()
+                    for (const key in this.Column) {
+                        if (this.Column[key].ClassCol) {
+                            tRow.classList.add(Data[i][key])
+                            continue
+                        }
+                        const cc = tRow.insertCell()
+                        cc.innerHTML = Data[i][key];
+                        if (this.Column[key].Hidden) cc.style.display = 'none'
+                    }
+                }
+            }
+            this.Resize()
+        }
+        @CallBack
+        public Resize() {
+            const Parent = this.Element.parentElement
+
+            if (Parent && this.Element.tBodies.length === 1 && this.Element.tHead) {
+                const tBody = this.Element.tBodies[0]
+                tBody.style.maxHeight = Parent.getBoundingClientRect().height
+                    - (tBody.getBoundingClientRect().top - Parent.getBoundingClientRect().top)
+
+                    - parseInt(getComputedStyle(Parent).borderBottomWidth)
+                    - parseInt(getComputedStyle(this.Element).marginBottom) + 'px'
+
+                setInterval((tB: HTMLTableSectionElement, tH: HTMLTableSectionElement) => {
+                    if (tB.rows.length > 0 && tH.rows.length > 0)
+                        for (let i = 0; i < tH.rows[0].cells.length; i++)
+                            tH.rows[0].cells[i].style.width =
+                                getComputedStyle(tB.rows[0].cells[i]).width
+                    if (tB.clientHeight == tB.scrollHeight)
+                        tB.parentElement?.classList.remove('TabScr')
+                    else
+                        tB.parentElement?.classList.add('TabScr')
+                }, 10, tBody, this.Element.tHead)
+            }
+        }
+    }
     export function CreateText<T extends keyof HTMLElementTagNameMap>(Name: T, Text: string, Class?: string): HTMLElementTagNameMap[T] {
         let elm = document.createElement(Name)
         elm.innerHTML = Text
@@ -197,10 +270,25 @@ namespace Entropia {
      * */
     type FooterFormNames = 'Cписок номенклатуры' | 'Настройки' | 'Новый элемент' | 'Журнал'
 
-    export var MainForm: EntropiaMainForm
+    interface srvResp<T extends object | string> {
+        noErr: boolean
+        rez: T
+    }
+    interface srvLogin {
+        logined: boolean
+        access_token: string
+    }
+    interface srvRequType {
+        otch: { tabType: string, depth: string }
+    }
+    /**типы запросов на сервер, srvRequ<'otch'>
+     * */
+    type srvRequ<T extends keyof srvRequType> = { cmd: T } & srvRequType[T]
+
+    export var MainForm: EntropiaMainForm | undefined
     export var FormFooter: LAO_Lib.LAO_TabMenu
     class EntropiaLoginForm extends LAO_Lib.LAO_Form {
-        public Form: HTMLElementTagNameMap['form']
+        public Form: HTMLElementTagNameMap['form'] & Partial<Record<'User' | 'Password', HTMLInputElement>>
         constructor(Parent: HTMLElement) {
             super(Parent, { title: false });
             this.Form = document.createElement('form')
@@ -216,13 +304,21 @@ namespace Entropia {
         }
         @LAO_Lib.CallBack
         public onLogin(ev: Event) {
-
-            //server call
-
-            this.Delete()
-            MainForm = new EntropiaMainForm()
+            new ServerCall(this.onLoginNext, undefined, {
+                headers: {
+                    Authorization: 'Basic ' + btoa(encodeURIComponent(`${this.Form.User?.value}:${this.Form.Password?.value}`)
+                        .replace(/%([0-9A-Za-z]{2})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16))))
+                }
+            })
 
             return false
+        }
+        @LAO_Lib.CallBack
+        public onLoginNext(rez: srvLogin) {
+            if (rez.logined) {
+                this.Delete()
+                MainForm = new EntropiaMainForm(rez.access_token)
+            }
         }
         public Delete() {
             super.Delete()
@@ -231,7 +327,7 @@ namespace Entropia {
     }
     class EntropiaMainForm extends LAO_Lib.LAO_Form {
         public Menu: LAO_Lib.LAO_TabMenu
-        constructor() {
+        constructor(public token: string) {
             super(document.body, { title: false })
 
             this.Menu = new LAO_Lib.LAO_TabMenu(this.Element)
@@ -251,6 +347,7 @@ namespace Entropia {
             super.Delete()
             FormFooter.Delete()
             this.Menu.onClick = undefined
+            MainForm = undefined
         }
         @LAO_Lib.CallBack
         public MenuClick(tab: LAO_Lib.LAO_TMenuItem) {
@@ -277,6 +374,7 @@ namespace Entropia {
     }
     class ReportForm extends LAO_Lib.LAO_Form {
         private ElementForm: HTMLFormElement & Partial<Record<'RType' | 'RDepth', HTMLInputElement>>
+        public ReportTable: LAO_Lib.Table
         constructor(Parent: HTMLElement) {
             super(Parent);
             this.Title = 'Журнал'
@@ -294,15 +392,36 @@ namespace Entropia {
             }), this.UpDateReport)
             EDropdown.CurrentElement.value = '1'
 
+            this.ReportTable = new LAO_Lib.Table(this.Element, {
+                Name: { Name: "Наименование", Hidden: false },
+                Value: { Name: "Сумма", Hidden: false },
+                lvl: { Name: "Class", Hidden: true, ClassCol: true }
+            })
+
+            this.UpDateReport()
+
             FormFooter.Add<FooterFormNames>('Журнал', this).LiElement.click()
 
             this.Element.classList.add('SubForm')
             this.ElementForm.classList.add('ElementForm')
+            this.ReportTable.Element.classList.add('TableValue')
+        }
+        public Delete() {
+            super.Delete()
+            FormFooter.DeleteItem(this)
         }
         @LAO_Lib.CallBack
-        public UpDateReport(elm: HTMLElementTagNameMap['li'], ev?: MouseEvent) {
-
-            //server call
+        public UpDateReport(elm?: HTMLElementTagNameMap['li'], ev?: MouseEvent) {
+            if (this.ElementForm.RType && this.ElementForm.RDepth)
+                new ServerCall(this.UpDateReportNext, {
+                    cmd: 'otch',
+                    tabType: this.ElementForm.RType.value,
+                    depth: this.ElementForm.RDepth.value
+                })
+        }
+        @LAO_Lib.CallBack
+        public UpDateReportNext(rez: object) {
+            this.ReportTable.SetData(rez as Record<string, string>[])
         }
     }
     class ItemListForm extends LAO_Lib.LAO_Form {
@@ -328,7 +447,7 @@ namespace Entropia {
         @LAO_Lib.CallBack
         public MenuClick(tab: LAO_Lib.LAO_TMenuItem) {
             if (tab.Name === '+') {
-                new ItemForm(MainForm.Element)
+                if (MainForm) new ItemForm(MainForm.Element)
             }
             return false
         }
@@ -425,11 +544,43 @@ namespace Entropia {
             if (lastElemen) lastElemen.click()
         }
     }
+    class ServerCall<T extends object | string, R extends keyof srvRequType> {
+        constructor(private CallBackFunc: (rez: T) => any, srvRequ?: srvRequ<R>, param?: RequestInit) {
+            if (!param) param = {}
+            if (!param.method) param.method = 'POST'
+            if (srvRequ) {
+                param.body = JSON.stringify(srvRequ)
+                param.headers = {
+                    Authorization: 'Bearer ' + MainForm?.token,
+                    'Content-Type': 'application/json'
+                }
+            }
+            try {
+                fetch('index.php', param).then(this.onResponse).then(this.onResponseNext)
+            } catch (e) {
+                alert('fetch не поддерживается')
+            }
+        }
+        @LAO_Lib.CallBack
+        public onResponse(rez: Response) {
+            if (rez.ok) return rez.json()
+            else alert(rez.statusText)
+        }
+        @LAO_Lib.CallBack
+        public onResponseNext(rez?: srvResp<T>) {
+            if (rez?.noErr) this.CallBackFunc(rez.rez)
+            else if (rez?.rez === 'Authentication failure') {
+                alert('Ошибка авторизации')
+                if (MainForm) MainForm.Menu.ChangeTab('Выход')
+            }
+            else alert(rez?.rez)
+        }
+    }
     export function EntropiaInit(ev: Event): any {
         new EntropiaLoginForm(document.body)
     }
     function SetUpDropdown<T extends keyof HTMLElementTagNameMap>(elm: LAO_Lib.LAO_Dropdown<T>,
-        ff?: (elm: HTMLElementTagNameMap['li'], ev?: MouseEvent)=> any) {
+        ff?: (elm: HTMLElementTagNameMap['li'], ev?: MouseEvent) => any) {
 
         if (ff) elm.onClick = ff
         elm.Element.classList.add('LAO_Dropdown')
@@ -440,3 +591,5 @@ namespace Entropia {
     }
 }
 window.onload = Entropia.EntropiaInit
+//window.onresize = function () { alert(11) }
+//window.addEventListener('onresize', () => { alert(11)})
