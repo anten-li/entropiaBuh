@@ -29,11 +29,11 @@ if ($inParam != "" or isset($_SERVER ['PHP_AUTH_USER'])) {
       
       $inParam = json_decode($inParam, TRUE);
       if ($inParam ["cmd"] == "StartLoad") {
-        $Entropia->Assets()->Load($inParam ["rez"], $inParam ["fgNomenkl"]);
-        $Entropia->ErrExit($inParam ["rez"] [2] [3], true);
-      } elseif ($inParam ["cmd"] == "otch") {
+        $Entropia->Assets()->Load($inParam ["arrData"], $inParam ["ItemOnly"]);
+        $Entropia->ErrExit("Ок", true);
+      } elseif ($inParam ["cmd"] == "Report") {
         $Entropia->errExit($Entropia->Assets()->Report($inParam ["depth"]), TRUE);
-      } elseif ($inParam ["cmd"] == "NomenklSp") {
+      } elseif ($inParam ["cmd"] == "ItemList") {
         $Entropia->ErrExit($Entropia->Items()->List($inParam ["Filter"]), TRUE);
       } elseif ($inParam ["cmd"] == "NomenklUpdate") {
         $Entropia->ErrExit($Entropia->Items()->Update($Entropia->EscapeKeys($inParam ["dat"])), TRUE);

@@ -291,6 +291,11 @@ nav > .LAO_Dropdown {
     border-style: outset;
 }
 
+.label {
+    color: lightgreen;
+    user-select: none;
+}
+
 .LoginForm {
     padding-top: 20vh;
     box-sizing: border-box;

@@ -17,6 +17,7 @@ namespace LAO_Lib {
 
     export class LAO_Element<T extends keyof HTMLElementTagNameMap> {
         public Element: HTMLElementTagNameMap[T];
+        protected Events: { Target: EventTarget, ff: () => any, Name: string }[] = []
         constructor(Name: T, Parent?: HTMLElement) {
             this.Element = document.createElement(Name)
             if (Parent) this.Parent = Parent
@@ -36,6 +37,8 @@ namespace LAO_Lib {
         get Parent(): HTMLElement | null { return this.Element.parentElement }
         public Delete() {
             if (this.Element.parentElement) this.Element.parentElement.removeChild(this.Element)
+            for (let i = 0; i < this.Events.length; i++)
+                this.Events[i].Target.removeEventListener(this.Events[i].Name, this.Events[i].ff)
         }
         //public onResize(ev?: UIEvent) { }
     }
@@ -165,7 +168,9 @@ namespace LAO_Lib {
             this.Element.createTHead()
             this.Element.createTBody()
             if (Column) this.SetColumn(Column)
-            window.addEventListener('resize', this.Resize)
+            const ff = this.Resize
+            this.Events.push({ Target: window, ff: ff, Name: 'resize' })
+            window.addEventListener('resize', ff)
         }
         public SetColumn(Col: Record<string, TableColumn>) {
             const tHead = this.Element.tHead
@@ -208,21 +213,29 @@ namespace LAO_Lib {
                 const tBody = this.Element.tBodies[0]
                 tBody.style.maxHeight = Parent.getBoundingClientRect().height
                     - (tBody.getBoundingClientRect().top - Parent.getBoundingClientRect().top)
-
                     - parseInt(getComputedStyle(Parent).borderBottomWidth)
                     - parseInt(getComputedStyle(this.Element).marginBottom) + 'px'
 
-                setInterval((tB: HTMLTableSectionElement, tH: HTMLTableSectionElement) => {
+                if (tBody.clientHeight == tBody.scrollHeight)
+                    tBody.parentElement?.classList.remove('TabScr')
+                else
+                    tBody.parentElement?.classList.add('TabScr')
+
+                setTimeout((tB: HTMLTableSectionElement, tH: HTMLTableSectionElement) => {
                     if (tB.rows.length > 0 && tH.rows.length > 0)
-                        for (let i = 0; i < tH.rows[0].cells.length; i++)
-                            tH.rows[0].cells[i].style.width =
-                                getComputedStyle(tB.rows[0].cells[i]).width
-                    if (tB.clientHeight == tB.scrollHeight)
-                        tB.parentElement?.classList.remove('TabScr')
-                    else
-                        tB.parentElement?.classList.add('TabScr')
+                        for (let j = 0; j < 2; j++) {
+                            for (let i = 0; i < tH.rows[0].cells.length; i++) {
+                                const tHwidth = parseFloat(getComputedStyle(tH.rows[0].cells[i]).width)
+                                const tBwidth = parseFloat(getComputedStyle(tB.rows[0].cells[i]).width)
+                                if (tBwidth > tHwidth) tH.rows[0].cells[i].style.width = tBwidth + 'px'
+                                else tB.rows[0].cells[i].style.width = tHwidth + 'px'
+                            }
+                        }
                 }, 10, tBody, this.Element.tHead)
             }
+        }
+        public Delete() {
+            super.Delete()
         }
     }
     export function CreateText<T extends keyof HTMLElementTagNameMap>(Name: T, Text: string, Class?: string): HTMLElementTagNameMap[T] {
@@ -237,7 +250,7 @@ namespace LAO_Lib {
             Result.appendChild(elm[i])
         return Result
     }
-    export function CteateInput(Type: InputType, Name: string, Value?: string,
+    export function CreateInput(Type: InputType, Name: string, Value?: string,
         OnClick?: ((ev: MouseEvent) => any)) {
 
         const elm = document.createElement('input')
@@ -279,7 +292,9 @@ namespace Entropia {
         access_token: string
     }
     interface srvRequType {
-        otch: { tabType: string, depth: string }
+        Report: { tabType: string, depth: string }
+        StartLoad: { arrData: string[][], ItemOnly: boolean }
+        ItemList: { Filter: number }
     }
     /**типы запросов на сервер, srvRequ<'otch'>
      * */
@@ -294,10 +309,10 @@ namespace Entropia {
             this.Form = document.createElement('form')
             this.Element.appendChild(this.Form)
             this.Form.appendChild(LAO_Lib.CreateText('label', 'пользователь:'))
-            this.Form.appendChild(LAO_Lib.CteateInput('text', 'User'))
+            this.Form.appendChild(LAO_Lib.CreateInput('text', 'User'))
             this.Form.appendChild(LAO_Lib.CreateText('label', 'пароль:'))
-            this.Form.appendChild(LAO_Lib.CteateInput('password', 'Password'))
-            this.Form.appendChild(LAO_Lib.CreateBlock([LAO_Lib.CteateInput('submit', 'Submit', 'Вход')])).classList.add('SubmitFooter')
+            this.Form.appendChild(LAO_Lib.CreateInput('password', 'Password'))
+            this.Form.appendChild(LAO_Lib.CreateBlock([LAO_Lib.CreateInput('submit', 'Submit', 'Вход')])).classList.add('SubmitFooter')
             this.Form.onsubmit = this.onLogin
 
             this.Element.classList.add('LoginForm')
@@ -382,12 +397,12 @@ namespace Entropia {
             this.Element.appendChild(this.ElementForm)
             const menu = this.ElementForm.appendChild(this.Element.appendChild(document.createElement('nav')))
 
-            let EDropdown = SetUpDropdown(new LAO_Lib.LAO_Dropdown<'input'>(LAO_Lib.CteateInput('text', 'RType'), menu, {
+            let EDropdown = SetUpDropdown(new LAO_Lib.LAO_Dropdown<'input'>(LAO_Lib.CreateInput('text', 'RType'), menu, {
                 Values: ['Номенклатура', 'Документы']
             }), this.UpDateReport)
             EDropdown.CurrentElement.value = 'Номенклатура'
 
-            EDropdown = SetUpDropdown(new LAO_Lib.LAO_Dropdown<'input'>(LAO_Lib.CteateInput('text', 'RDepth'), menu, {
+            EDropdown = SetUpDropdown(new LAO_Lib.LAO_Dropdown<'input'>(LAO_Lib.CreateInput('text', 'RDepth'), menu, {
                 Values: ['1', '2', '3']
             }), this.UpDateReport)
             EDropdown.CurrentElement.value = '1'
@@ -407,6 +422,7 @@ namespace Entropia {
             this.ReportTable.Element.classList.add('TableValue')
         }
         public Delete() {
+            this.ReportTable.Delete()
             super.Delete()
             FormFooter.DeleteItem(this)
         }
@@ -414,7 +430,7 @@ namespace Entropia {
         public UpDateReport(elm?: HTMLElementTagNameMap['li'], ev?: MouseEvent) {
             if (this.ElementForm.RType && this.ElementForm.RDepth)
                 new ServerCall(this.UpDateReportNext, {
-                    cmd: 'otch',
+                    cmd: 'Report',
                     tabType: this.ElementForm.RType.value,
                     depth: this.ElementForm.RDepth.value
                 })
@@ -426,6 +442,7 @@ namespace Entropia {
     }
     class ItemListForm extends LAO_Lib.LAO_Form {
         Menu: LAO_Lib.LAO_TabMenu
+        Items: LAO_Lib.Table
         constructor(Parent: HTMLElement) {
             super(Parent);
             this.Title = 'Список номенклатуры'
@@ -435,14 +452,35 @@ namespace Entropia {
             this.Menu.Add('&#8634')
             this.Menu.onClick = this.MenuClick
 
+            this.Items = new LAO_Lib.Table(this.Element, {
+                Name: { Name: 'Наименование', Hidden: false },
+                Type: { Name: 'Тип', Hidden: false },
+                Ref: { Name: 'Ссылка', Hidden: true }
+            })
+
+            this.Update()
+
             FormFooter.Add<FooterFormNames>('Cписок номенклатуры', this).LiElement.click()
 
             this.Element.classList.add('SubForm')
             this.Menu.Element.classList.add('LineMenu')
+            this.Items.Element.classList.add('TableValue')
         }
         public Delete() {
             super.Delete()
             FormFooter.DeleteItem(this)
+            this.Items.Delete()
+        }
+        @LAO_Lib.CallBack
+        public Update() {
+            new ServerCall(this.UpdateNext, {
+                cmd: 'ItemList',
+                Filter: -1
+            })
+        }
+        @LAO_Lib.CallBack
+        public UpdateNext(rez: Record<string, string>[]) {
+            this.Items.SetData(rez)
         }
         @LAO_Lib.CallBack
         public MenuClick(tab: LAO_Lib.LAO_TMenuItem) {
@@ -451,16 +489,26 @@ namespace Entropia {
             }
             return false
         }
+        public Show() {
+            super.Show()
+            setTimeout(this.Items.Resize, 100)
+            setTimeout(this.Items.Resize, 200)
+        }
     }
     class SettingForm extends LAO_Lib.LAO_Form {
         private FileStartLoad: HTMLInputElement
+        private ItemOnly: HTMLElementTagNameMap['input']
         constructor(Parent: HTMLElement) {
             super(Parent)
-            this.FileStartLoad = LAO_Lib.CteateInput('file', 'FileName')
+            this.FileStartLoad = LAO_Lib.CreateInput('file', 'FileName')
             this.FileStartLoad.setAttribute('accept', '.csv')
             this.FileStartLoad.onchange = this.StartLoad
             this.Element.appendChild(LAO_Lib.CreateText('label', 'загрузить остатки', 'Button'))
                 .appendChild(this.FileStartLoad).style.display = 'none'
+            this.ItemOnly = LAO_Lib.CreateInput('checkbox', 'ItemOnly')
+            this.Element.appendChild(LAO_Lib.CreateText('label', 'Только номенклатура', 'label'))
+                .appendChild(this.ItemOnly)
+
             this.Title = 'Настройки'
 
             FormFooter.Add<FooterFormNames>('Настройки', this).LiElement.click()
@@ -482,7 +530,11 @@ namespace Entropia {
                 const rez2: string[][] = []
                 for (let i = 0; i < rez.length; i++) rez2[i] = rez[i].split(";");
 
-                //server call
+                new ServerCall(() => { }, {
+                    cmd: 'StartLoad',
+                    arrData: rez2,
+                    ItemOnly: this.ItemOnly.checked
+                })
             }
         }
     }
@@ -495,8 +547,8 @@ namespace Entropia {
             this.Element.appendChild(this.ElementForm)
             this.ElementForm.appendChild(LAO_Lib.CreateBlock([
                 LAO_Lib.CreateText('label', 'Наименование:'),
-                LAO_Lib.CteateInput('text', 'ItemName')]))
-            const TypeDropdown = SetUpDropdown(new LAO_Lib.LAO_Dropdown<'input'>(LAO_Lib.CteateInput('text', 'ItemType'), this.ElementForm, {
+                LAO_Lib.CreateInput('text', 'ItemName')]))
+            const TypeDropdown = SetUpDropdown(new LAO_Lib.LAO_Dropdown<'input'>(LAO_Lib.CreateInput('text', 'ItemType'), this.ElementForm, {
                 Values: ItemType
             }), this.onTypeSelect)
             TypeDropdown.CurrentElement.value = '<...>'
@@ -505,13 +557,13 @@ namespace Entropia {
                 TypeDropdown.Element]))
             this.ElementForm.appendChild(LAO_Lib.CreateBlock([
                 LAO_Lib.CreateText('label', 'Стоимость:'),
-                LAO_Lib.CteateInput('text', 'ItemValue')]))
+                LAO_Lib.CreateInput('text', 'ItemValue')]))
             this.ElementForm.appendChild(LAO_Lib.CreateBlock([
                 LAO_Lib.CreateText('label', 'Износ:'),
-                LAO_Lib.CteateInput('text', 'ItemDecay')]))
+                LAO_Lib.CreateInput('text', 'ItemDecay')]))
             this.ElementForm.appendChild(LAO_Lib.CreateBlock([
-                LAO_Lib.CteateInput('submit', 'Ok', 'Ок', this.Save),
-                LAO_Lib.CteateInput('submit', 'Cancel', 'Отмена', () => { this.onClose() })])).classList.add('SubmitFooter')
+                LAO_Lib.CreateInput('submit', 'Ok', 'Ок', this.Save),
+                LAO_Lib.CreateInput('submit', 'Cancel', 'Отмена', () => { this.onClose() })])).classList.add('SubmitFooter')
             this.ElementForm.onsubmit = () => false
 
             FormFooter.Add<FooterFormNames>('Новый элемент', this).LiElement.click()
