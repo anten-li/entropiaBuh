@@ -684,6 +684,35 @@ class Items extends Table {
         'Name'
     ])->fetch_all(MYSQLI_ASSOC);
   }
+  
+  /**
+   * Добавляет номенклатуру
+   * 
+   * @param array $Data
+   */
+  public function Add($Data){
+    If(!$Data['Name'])
+      return [
+          'err' => TRUE,
+          'msg' => 'укажите наименование'
+      ];
+    If(!$Data['Type'])
+      return [
+          'err' => TRUE,
+          'msg' => 'укажите тип'
+      ];
+    
+    $Data['Parent'] = '';
+    $Data['IsGroup'] = FALSE;
+    
+    unset($Data['Ref']);
+    return [
+      'err' => FALSE,
+      'msg' => [
+          'ref' => $this->Insert($Data)
+      ]
+    ];    
+  }
 }
 
 /**

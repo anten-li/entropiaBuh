@@ -35,8 +35,13 @@ if ($inParam != "" or isset($_SERVER ['PHP_AUTH_USER'])) {
         $Entropia->errExit($Entropia->Assets()->Report($inParam ["depth"]), TRUE);
       } elseif ($inParam ["cmd"] == "ItemList") {
         $Entropia->ErrExit($Entropia->Items()->List($inParam ["Filter"]), TRUE);
-      } elseif ($inParam ["cmd"] == "NomenklUpdate") {
-        $Entropia->ErrExit($Entropia->Items()->Update($Entropia->EscapeKeys($inParam ["dat"])), TRUE);
+      } elseif ($inParam ["cmd"] == "ItemUpdate") {
+        if($inParam ['Data']['Ref'] == '') {
+          $rez = $Entropia->Items()->Add($inParam ["Data"]);
+          $Entropia->errExit($rez['msg'], !$rez['err']);
+        }
+        else 
+          $Entropia->ErrExit($Entropia->Items()->Update($Entropia->EscapeKeys($inParam ["Data"])), TRUE);
       } elseif ($inParam ["cmd"] == "logOff") {
         $Entropia->User()->LogOff();
         $Entropia->errExit([ 

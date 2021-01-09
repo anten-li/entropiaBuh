@@ -218,10 +218,10 @@ nav > .LAO_Dropdown {
     }
 
     .TableValue td {
-        /*border: 0.1em solid darkseagreen;*/
         border-top: 0.1em solid darkseagreen;
         border-left: 0.1em solid darkseagreen;
         padding: 0.2em;
+        user-select: none;
     }
 
         .TableValue td:first-child {

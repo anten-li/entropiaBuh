@@ -21,7 +21,6 @@ namespace LAO_Lib {
         constructor(Name: T, Parent?: HTMLElement) {
             this.Element = document.createElement(Name)
             if (Parent) this.Parent = Parent
-            //this.Element.onresize = this.onResize
         }
         public Hide(): void {
             this.Element.style.display = 'none'
@@ -40,7 +39,6 @@ namespace LAO_Lib {
             for (let i = 0; i < this.Events.length; i++)
                 this.Events[i].Target.removeEventListener(this.Events[i].Name, this.Events[i].ff)
         }
-        //public onResize(ev?: UIEvent) { }
     }
     export class LAO_Form extends LAO_Element<'div'> {
         private Title_: HTMLElementTagNameMap['h1'] | undefined
@@ -186,10 +184,21 @@ namespace LAO_Lib {
                 }
             }
         }
+        public ColIndex(Name: string) {
+            let i = 0
+            for (const Key in this.Column) {
+                if (Name == Key) return i
+                i++
+            }
+            return -1
+        }
         public SetData(Data: Record<string, string>[]) {
-            if (this.Element.tBodies.length === 1) {
+            if (this.Element.tBodies.length === 1 && this.Element.tHead) {
                 const tBody = this.Element.tBodies[0]
                 tBody.innerHTML = ''
+                const arrWidth: number[] = []
+                for (let i = 0; i < this.Element.tHead.rows[0].cells.length; i++)
+                    arrWidth[i] = parseFloat(getComputedStyle(this.Element.tHead.rows[0].cells[i]).width)
                 for (let i = 0; i < Data.length; i++) {
                     const tRow = tBody.insertRow()
                     for (const key in this.Column) {
@@ -200,11 +209,14 @@ namespace LAO_Lib {
                         const cc = tRow.insertCell()
                         cc.innerHTML = Data[i][key];
                         if (this.Column[key].Hidden) cc.style.display = 'none'
+                        if (i === 0) cc.style.minWidth = arrWidth[this.ColIndex(key)] + 'px'
                     }
+                    this.onRowOutput(tRow)
                 }
             }
             this.Resize()
         }
+        public onRowOutput = (cc: HTMLTableRowElement) => { }
         @CallBack
         public Resize() {
             const Parent = this.Element.parentElement
@@ -224,12 +236,8 @@ namespace LAO_Lib {
                 setTimeout((tB: HTMLTableSectionElement, tH: HTMLTableSectionElement) => {
                     if (tB.rows.length > 0 && tH.rows.length > 0)
                         for (let j = 0; j < 2; j++) {
-                            for (let i = 0; i < tH.rows[0].cells.length; i++) {
-                                const tHwidth = parseFloat(getComputedStyle(tH.rows[0].cells[i]).width)
-                                const tBwidth = parseFloat(getComputedStyle(tB.rows[0].cells[i]).width)
-                                if (tBwidth > tHwidth) tH.rows[0].cells[i].style.width = tBwidth + 'px'
-                                else tB.rows[0].cells[i].style.width = tHwidth + 'px'
-                            }
+                            for (let i = 0; i < tH.rows[0].cells.length; i++)
+                                tH.rows[0].cells[i].style.width = parseFloat(getComputedStyle(tB.rows[0].cells[i]).width) + 'px'
                         }
                 }, 10, tBody, this.Element.tHead)
             }
@@ -295,6 +303,7 @@ namespace Entropia {
         Report: { tabType: string, depth: string }
         StartLoad: { arrData: string[][], ItemOnly: boolean }
         ItemList: { Filter: number }
+        ItemUpdate: { Data: Record<'Ref' | 'Type' | 'Name', string | number> }
     }
     /**типы запросов на сервер, srvRequ<'otch'>
      * */
@@ -455,8 +464,10 @@ namespace Entropia {
             this.Items = new LAO_Lib.Table(this.Element, {
                 Name: { Name: 'Наименование', Hidden: false },
                 Type: { Name: 'Тип', Hidden: false },
-                Ref: { Name: 'Ссылка', Hidden: true }
+                Ref: { Name: 'Ссылка', Hidden: true },
+                lvl: { Name: "Class", Hidden: true, ClassCol: true }
             })
+            this.Items.onRowOutput = this.onRowOut
 
             this.Update()
 
@@ -480,19 +491,51 @@ namespace Entropia {
         }
         @LAO_Lib.CallBack
         public UpdateNext(rez: Record<string, string>[]) {
+            for (let i = 0; i < rez.length; i++)
+                rez[i]['lvl'] = 'lvl_3'
             this.Items.SetData(rez)
         }
         @LAO_Lib.CallBack
         public MenuClick(tab: LAO_Lib.LAO_TMenuItem) {
             if (tab.Name === '+') {
-                if (MainForm) new ItemForm(MainForm.Element)
+                if (MainForm) {
+                    const Item = new ItemForm(MainForm.Element)
+                    Item.Ref = ''
+                    Item.onSelect = this.onItemSelectNext
+                }
             }
             return false
         }
+        @LAO_Lib.CallBack
+        public onRowOut(row: HTMLTableRowElement) {
+            if (row.cells[this.Items.ColIndex('Type')].textContent == '0')
+                row.cells[this.Items.ColIndex('Type')].innerText = '<...>'
+            else row.cells[this.Items.ColIndex('Type')].innerText = ItemType[parseInt(row.cells[this.Items.ColIndex('Type')].innerText) - 1]
+            row.ondblclick = this.onItemSelect
+        }
+        @LAO_Lib.CallBack
+        public onItemSelect(ev: MouseEvent) {
+            const row = ev.currentTarget as HTMLTableRowElement
+            if (MainForm) {
+                const Item = new ItemForm(MainForm.Element)
+                if (Item.ElementForm.ItemName) Item.ElementForm.ItemName.value =
+                    row.cells[this.Items.ColIndex('Name')].innerText
+                if (Item.ElementForm.ItemType) Item.ElementForm.ItemType.value =
+                    row.cells[this.Items.ColIndex('Type')].innerText
+                Item.Ref = row.cells[this.Items.ColIndex('Ref')].innerText
+
+                Item.Title = 'Номенклатурa, ' + Item.ElementForm.ItemName?.value
+                Item.onTypeSelect()
+                Item.onSelect = this.onItemSelectNext
+            }
+        }
+        @LAO_Lib.CallBack
+        public onItemSelectNext() {
+            this.Update()
+        }
         public Show() {
             super.Show()
-            setTimeout(this.Items.Resize, 100)
-            setTimeout(this.Items.Resize, 200)
+            this.Items.Resize()
         }
     }
     class SettingForm extends LAO_Lib.LAO_Form {
@@ -537,9 +580,17 @@ namespace Entropia {
                 })
             }
         }
+        @LAO_Lib.CallBack
+        public Delete() {
+            super.Delete()
+            FormFooter.DeleteItem(this)
+            const lastElemen = FormFooter.MenuList.lastElementChild as HTMLElement
+            if (lastElemen) lastElemen.click()
+        }
     }
     class ItemForm extends LAO_Lib.LAO_Form {
-        private ElementForm: HTMLFormElement & Partial<Record<'ItemName' | 'ItemType' | 'ItemValue' | 'ItemDecay', HTMLInputElement>>
+        public ElementForm: HTMLFormElement & Partial<Record<'ItemName' | 'ItemType' | 'ItemValue' | 'ItemDecay', HTMLInputElement>>
+        public Ref = ''
         constructor(Parent: HTMLElement) {
             super(Parent)
             this.Title = 'Новый элемент, номенклатура'
@@ -574,10 +625,10 @@ namespace Entropia {
             this.ElementForm.classList.add('ElementForm')
         }
         @LAO_Lib.CallBack
-        public onTypeSelect(elm: HTMLElementTagNameMap['li'], ev?: MouseEvent) {
-            if (this.ElementForm.ItemDecay)
-                if (elm.innerHTML === ItemType[3] ||
-                    elm.innerHTML === ItemType[4]) this.ElementForm.ItemDecay.disabled = false
+        public onTypeSelect() {
+            if (this.ElementForm.ItemDecay && this.ElementForm.ItemType)
+                if (this.ElementForm.ItemType.value === ItemType[3] ||
+                    this.ElementForm.ItemType.value === ItemType[4]) this.ElementForm.ItemDecay.disabled = false
                 else {
                     this.ElementForm.ItemDecay.disabled = true
                     this.ElementForm.ItemDecay.value = ''
@@ -585,10 +636,22 @@ namespace Entropia {
         }
         @LAO_Lib.CallBack
         public Save() {
-            //server call
-
+            if (this.ElementForm.ItemName && this.ElementForm.ItemType) 
+                new ServerCall(this.SaveNext, {
+                    cmd: this.ElementForm.Ref = 'ItemUpdate',
+                    Data: {
+                        Ref: this.Ref,
+                        Name: this.ElementForm.ItemName.value,
+                        Type: ItemType.indexOf(this.ElementForm.ItemType.value as typeof ItemType[number]) + 1
+                    }
+                })
+        }
+        @LAO_Lib.CallBack
+        public SaveNext() {
+            this.onSelect()
             this.onClose()
         }
+        public onSelect = () => { }
         public Delete() {
             super.Delete()
             FormFooter.DeleteItem(this)
@@ -643,5 +706,3 @@ namespace Entropia {
     }
 }
 window.onload = Entropia.EntropiaInit
-//window.onresize = function () { alert(11) }
-//window.addEventListener('onresize', () => { alert(11)})
